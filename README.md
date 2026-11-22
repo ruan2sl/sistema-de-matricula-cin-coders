@@ -4,7 +4,14 @@ Sistema de matrícula de graduação para alunos e secretaria. A aplicação Rea
 
 ## Rodar do zero
 
-Com Node.js 24.15 ou superior e npm instalados, rode os três comandos na raiz do monorepo.
+Com Node.js 24.15 ou superior e npm instalados, clone o projeto usando uma conta com acesso ao repositório privado.
+
+```sh
+git clone https://github.com/ruan2sl/cin-coders.git
+cd cin-coders
+```
+
+Na raiz do monorepo, instale as dependências, carregue os dados de demonstração e inicie o portal.
 
 ```sh
 npm ci
