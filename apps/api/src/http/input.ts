@@ -19,7 +19,10 @@ export function integer(value: unknown, label: string): number {
   return value
 }
 export function parseId(value: unknown): number {
-  return integer(typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : undefined, 'o identificador')
+  return integer(
+    typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : undefined,
+    'o identificador',
+  )
 }
 export function readSearch(query: Record<string, unknown>) {
   const page = query.page === undefined ? 1 : parseId(query.page)

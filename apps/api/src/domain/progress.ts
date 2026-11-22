@@ -1,12 +1,20 @@
 import type { Goals, Group, ProgressRow } from '@matricula/contracts'
 
-export interface Credit { subjectId: number; hours: number }
+export interface Credit {
+  subjectId: number
+  hours: number
+}
 export type Curriculum = ReadonlyMap<number, Group>
 export function classify(curriculum: Curriculum, subjectId: number): Group {
   return curriculum.get(subjectId) ?? 'livre'
 }
 
-export function calculateProgress(goals: Goals, curriculum: Curriculum, approved: Credit[], active: Credit[]): ProgressRow[] {
+export function calculateProgress(
+  goals: Goals,
+  curriculum: Curriculum,
+  approved: Credit[],
+  active: Credit[],
+): ProgressRow[] {
   const completed: Goals = { obrigatoria: 0, perfil: 0, livre: 0 }
   const ongoing: Goals = { obrigatoria: 0, perfil: 0, livre: 0 }
   const counted = new Set<number>()
@@ -20,9 +28,13 @@ export function calculateProgress(goals: Goals, curriculum: Curriculum, approved
   completed.perfil -= overflow
   completed.livre += overflow
   const groups: Group[] = ['obrigatoria', 'perfil', 'livre']
-  return groups.map(group => ({
-    group, required: goals[group], completed: completed[group], ongoing: ongoing[group],
+  return groups.map((group) => ({
+    group,
+    required: goals[group],
+    completed: completed[group],
+    ongoing: ongoing[group],
     remaining: Math.max(0, goals[group] - completed[group]),
-    percent: goals[group] === 0 ? 100 : Math.min(100, Math.floor(completed[group] * 100 / goals[group]))
+    percent:
+      goals[group] === 0 ? 100 : Math.min(100, Math.floor((completed[group] * 100) / goals[group])),
   }))
 }
