@@ -1,16 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import './style.css'
+import { useEffect } from 'react'
 import { createRoot } from 'react-dom/client'
-import type { Session } from '@matricula/contracts'
-import { api, ApiError } from './lib/api'
+import { useSession } from './lib/session'
 import { navigate, useLocation } from './lib/location'
 import { Brand, Link, Notice, Status } from './components/shared'
 import { Login } from './pages/Login'
-import { CourseProgress, MyEnrollments, Offers } from './pages/Student'
+import { PlannerPage } from './pages/planner/PlannerPage'
 import { Professors, Sections, Subjects } from './pages/Office'
-import './style.css'
 
 const studentPages = [
-  ['/aluno/ofertas', 'Ofertas'],
+  ['/aluno/ofertas', 'Planejamento'],
   ['/aluno/matriculas', 'Minhas matrículas'],
   ['/aluno/progresso', 'Progresso'],
 ]
@@ -21,41 +20,7 @@ const officePages = [
 ]
 function App() {
   const href = useLocation()
-  const [user, setUser] = useState<Session | null | undefined>(undefined)
-  const [error, setError] = useState('')
-  const [expired, setExpired] = useState(false)
-  const load = useCallback(async () => {
-    setError('')
-    try {
-      setUser(await api<Session>('/sessao'))
-    } catch (e) {
-      if (e instanceof ApiError && e.status === 401) setUser(null)
-      else setError((e as Error).message)
-    }
-  }, [])
-  useEffect(() => {
-    void load()
-    const expire = () => {
-      setUser(null)
-      setExpired(true)
-      navigate('/login', true)
-    }
-    addEventListener('sessao-expirada', expire)
-    return () => removeEventListener('sessao-expirada', expire)
-  }, [load])
-  useEffect(() => {
-    if (!user) return
-    const expire = () => dispatchEvent(new Event('sessao-expirada'))
-    const checkOnReturn = () => {
-      if (Date.now() >= user.expiresAt) expire()
-    }
-    const timer = window.setTimeout(expire, Math.max(0, user.expiresAt - Date.now()))
-    document.addEventListener('visibilitychange', checkOnReturn)
-    return () => {
-      clearTimeout(timer)
-      document.removeEventListener('visibilitychange', checkOnReturn)
-    }
-  }, [user])
+  const { user, error, expired, load, loggedIn, logout } = useSession()
   const [path, search = ''] = href.split('?')
   const pages = user?.role === 'secretaria' ? officePages : studentPages
   useEffect(() => {
@@ -70,17 +35,6 @@ function App() {
     const label = pages.find(([url]) => path === url)?.[1] || 'Entrar'
     document.title = label + ' · Graduação'
   }, [path, pages])
-  async function logout() {
-    try {
-      await api('/sessao', 'DELETE')
-      setUser(null)
-      setExpired(false)
-      setError('')
-      navigate('/login', true)
-    } catch (e) {
-      setError((e as Error).message)
-    }
-  }
   if (user === undefined)
     return (
       <main className="loading-shell">
@@ -88,30 +42,13 @@ function App() {
         <Status error={error} retry={load} />
       </main>
     )
-  if (!user)
-    return (
-      <Login
-        expired={expired}
-        onLogin={(person) => {
-          setUser(person)
-          setExpired(false)
-          setError('')
-        }}
-      />
-    )
+  if (!user) return <Login expired={expired} onLogin={loggedIn} />
   const query = search ? '?' + search : ''
-  const views: Record<string, React.ReactNode> =
-    user.role === 'aluno'
-      ? {
-          '/aluno/ofertas': <Offers query={query} />,
-          '/aluno/matriculas': <MyEnrollments />,
-          '/aluno/progresso': <CourseProgress />,
-        }
-      : {
-          '/secretaria/disciplinas': <Subjects query={query} />,
-          '/secretaria/professores': <Professors />,
-          '/secretaria/turmas': <Sections />,
-        }
+  const officeViews: Record<string, React.ReactNode> = {
+    '/secretaria/disciplinas': <Subjects query={query} />,
+    '/secretaria/professores': <Professors />,
+    '/secretaria/turmas': <Sections />,
+  }
   return (
     <div className="shell">
       <a className="skip" href="#conteudo">
@@ -134,7 +71,7 @@ function App() {
       <nav aria-label="Área acadêmica">
         <div>
           {pages.map(([url, label]) => (
-            <Link key={url} to={url} current={url === path}>
+            <Link key={url} to={url + (user.role === 'aluno' ? query : '')} current={url === path}>
               {label}
             </Link>
           ))}
@@ -142,7 +79,11 @@ function App() {
       </nav>
       <main id="conteudo" className="workspace" tabIndex={-1}>
         <Notice text={error} error />
-        {views[path]}
+        {user.role === 'aluno' ? (
+          <PlannerPage key={user.id} owner={user.id} query={query} destination={path} />
+        ) : (
+          officeViews[path]
+        )}
       </main>
     </div>
   )

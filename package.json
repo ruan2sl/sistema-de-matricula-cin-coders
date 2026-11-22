@@ -16,9 +16,11 @@
     "start": "node apps/api/src/server.ts",
     "build": "tsc --noEmit && vite build apps/web",
     "check": "tsc --noEmit",
+    "test:e2e": "npm run build && playwright test",
     "test": "node --test apps/api/tests/*.test.ts"
   },
   "devDependencies": {
+    "@playwright/test": "^1.58.2",
     "@types/express": "^5.0.0",
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.0",

@@ -15,11 +15,22 @@ export function openDatabase(path = defaultPath) {
   )
   db.exec('PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL')
   db.exec(readFileSync(new URL('./schema.sql', import.meta.url), 'utf8'))
+  if (Number(db.prepare('PRAGMA user_version').get()!.user_version) === 0) {
+    transaction(db, () => {
+      if (Number(db.prepare('PRAGMA user_version').get()!.user_version) !== 0) return
+      loadDemoMeetings(db)
+      db.exec('PRAGMA user_version=1')
+    })
+  }
   return db
 }
 
-export function transaction<T>(db: Db, operation: () => T): T {
-  db.exec('BEGIN IMMEDIATE')
+export function loadDemoMeetings(db: Db) {
+  db.exec(readFileSync(new URL('./demo-meetings.sql', import.meta.url), 'utf8'))
+}
+
+export function transaction<T>(db: Db, operation: () => T, mode: 'read' | 'write' = 'write'): T {
+  db.exec(mode === 'read' ? 'BEGIN' : 'BEGIN IMMEDIATE')
   try {
     const result = operation()
     db.exec('COMMIT')

@@ -34,6 +34,58 @@ async function fixture(t: TestContext) {
   }
   return { db, send, account }
 }
+test('planejamento pagina após o filtro, mantém simuladas fora da busca e só contabiliza confirmadas', async (t) => {
+  const { account } = await fixture(t)
+  const ana = await account('ana')
+  const preview = await (await ana('/aluno/planejamento?q=IF669&simular=1')).json()
+  assert.equal(preview.items.length, 2)
+  assert.equal(preview.drafts[0].name, 'Banco de Dados')
+  assert.equal(preview.drafts[0].meetings.length, 2)
+  assert.equal(preview.confirmed.length, 0)
+  assert.equal(preview.progress.semesterHours, 0)
+  await ana('/aluno/matriculas', 'POST', { sectionId: 2 })
+  const filtered = await (await ana('/aluno/planejamento?elegiveis=1')).json()
+  assert.equal(filtered.total, 6)
+  assert.equal(filtered.items.length, 6)
+  assert.ok(filtered.items.every((s: Offer) => s.unavailable === null))
+  assert.equal(filtered.confirmed[0].meetings.length, 2)
+  assert.equal(filtered.progress.semesterHours, 60)
+})
+test('horários inválidos preservam a grade anterior e encontros consecutivos são permitidos', async (t) => {
+  const { account } = await fixture(t)
+  const office = await account('secretaria')
+  const path = '/secretaria/turmas/1/horarios'
+  const slots = [
+    { day: 1, start: 480, end: 540 },
+    { day: 1, start: 540, end: 600 },
+  ]
+  assert.equal((await office(path, 'PUT', { meetings: slots })).status, 200)
+  for (const bad of [
+    { day: 8, start: 600, end: 700 },
+    { day: 1, start: 500, end: 550 },
+    { day: 1, start: 700, end: 690 },
+  ]) {
+    assert.equal((await office(path, 'PUT', { meetings: [...slots, bad] })).status, 400)
+  }
+  const sections = (await (await office('/secretaria/turmas')).json()) as Section[]
+  assert.deepEqual(sections.find((s) => s.id === 1)!.meetings, slots)
+})
+test('uma ação que ainda exibe o usuário anterior é recusada antes da matrícula', async (t) => {
+  const { send, db } = await fixture(t)
+  const login = await send('/sessao', 'POST', { username: 'bruno' })
+  const res = await fetch(new URL('/api/aluno/matriculas', login.url), {
+    method: 'POST',
+    headers: {
+      Cookie: login.headers.get('set-cookie')!.split(';')[0],
+      'Content-Type': 'application/json',
+      'X-Expected-User': '1',
+    },
+    body: JSON.stringify({ sectionId: 1 }),
+  })
+  assert.equal(res.status, 409)
+  assert.equal(res.headers.get('X-Session-Changed'), '1')
+  assert.equal(db.prepare('SELECT count(*) AS n FROM enrollments').get()!.n, 0)
+})
 test('sessão expira, logout revoga o cookie e a API isola os dois perfis', async (t) => {
   const { db, send, account } = await fixture(t)
   assert.equal((await send('/aluno/ofertas')).status, 401)

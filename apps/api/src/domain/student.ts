@@ -1,8 +1,20 @@
-import type { Enrollment, Goals, Group, Offer, Progress, Section, User } from '@matricula/contracts'
+import type {
+  Enrollment,
+  Goals,
+  Group,
+  Offer,
+  Page,
+  Planner,
+  Progress,
+  Section,
+  User,
+} from '@matricula/contracts'
 import type { Db } from '../db/database.ts'
 import { transaction } from '../db/database.ts'
-import { catalogPage, first, rows } from '../db/queries.ts'
+import { catalogPage, first, rows, pagination } from '../db/queries.ts'
 import { HttpError } from '../http/input.ts'
+import { withMeetings } from './meetings.ts'
+import { blockingReason } from './eligibility.ts'
 import { calculateProgress, classify } from './progress.ts'
 import type { Credit } from './progress.ts'
 
@@ -39,8 +51,9 @@ function studentRecords(db: Db, student: User) {
   return { goals, curriculum, approved, active, semesterHours }
 }
 
-export function progress(db: Db, student: User): Progress {
-  const { goals, curriculum, approved, active, semesterHours } = studentRecords(db, student)
+type Records = ReturnType<typeof studentRecords>
+
+function summarize({ goals, curriculum, approved, active, semesterHours }: Records): Progress {
   return {
     groups: calculateProgress(goals, curriculum, approved, active),
     semesterHours,
@@ -48,37 +61,99 @@ export function progress(db: Db, student: User): Progress {
   }
 }
 
-function eligibility(db: Db, student: User) {
-  const { curriculum, approved, active, goals, semesterHours } = studentRecords(db, student)
-  const passed = new Set(approved.map((row) => row.subjectId))
-  const underway = new Set(active.map((row) => row.subjectId))
-  function reason(section: Section) {
-    if (passed.has(section.subjectId)) return 'Disciplina já aprovada.'
-    if (underway.has(section.subjectId)) return 'Você já cursa esta disciplina neste semestre.'
-    if (section.occupied >= section.capacity) return 'Turma lotada.'
-    if (semesterHours + section.hours > goals.semesterLimit)
-      return `Limite de ${goals.semesterLimit}h por semestre. Restam ${goals.semesterLimit - semesterHours}h disponíveis.`
-    return null
-  }
-  return { curriculum, reason, semesterHours, semesterLimit: goals.semesterLimit }
+export function progress(db: Db, student: User) {
+  return summarize(studentRecords(db, student))
 }
 
-export function offers(db: Db, student: User, search: { q: string; page: number }) {
-  const page = catalogPage<Section>(db, 'section_details', search)
-  const { curriculum, reason, semesterHours, semesterLimit } = eligibility(db, student)
-  const items: Offer[] = page.items.map((section) => ({
-    ...section,
-    group: classify(curriculum, section.subjectId),
-    unavailable: reason(section),
-  }))
-  return { ...page, items, semesterHours, semesterLimit }
+type Search = { q: string; page: number; eligible?: boolean }
+
+function offerCatalog(db: Db, records: Records, search: Search, selected: number[]) {
+  const { curriculum, approved, active, goals, semesterHours } = records
+  const passed = new Set(approved.map((row) => row.subjectId))
+  const underway = new Set(active.map((row) => row.subjectId))
+  const semesterLimit = goals.semesterLimit
+  function classifyOffer(section: Section): Offer {
+    const unavailable = blockingReason(section, {
+      passed: passed.has(section.subjectId),
+      enrolled: underway.has(section.subjectId),
+      semesterHours,
+      semesterLimit,
+    })
+    return { ...section, group: classify(curriculum, section.subjectId), unavailable }
+  }
+  let page: Page<Offer>
+  if (search.eligible) {
+    const matching = rows<Section>(
+      db,
+      `SELECT * FROM section_details
+      WHERE instr(fold(code || ' ' || name),fold(?))>0 ORDER BY fold(name),id`,
+      search.q,
+    )
+      .map(classifyOffer)
+      .filter((offer) => offer.unavailable === null)
+    const result = pagination(matching.length, search.page)
+    const offset = (result.page - 1) * result.pageSize
+    page = { ...result, items: matching.slice(offset, offset + result.pageSize) }
+  } else {
+    const result = catalogPage<Section>(db, 'section_details', search)
+    page = { ...result, items: result.items.map(classifyOffer) }
+  }
+  const drafts = selected.length
+    ? rows<Section>(
+        db,
+        'SELECT * FROM section_details WHERE id IN (SELECT value FROM json_each(?)) ORDER BY id',
+        JSON.stringify(selected),
+      ).map(classifyOffer)
+    : []
+  return {
+    ...page,
+    items: withMeetings(db, page.items),
+    drafts: withMeetings(db, drafts),
+    semesterHours,
+    semesterLimit,
+  }
+}
+
+export function offers(db: Db, student: User, search: Search) {
+  const { drafts, ...page } = offerCatalog(db, studentRecords(db, student), search, [])
+  return page
+}
+
+export function planner(db: Db, student: User, search: Search, selected: number[]): Planner {
+  return transaction(
+    db,
+    () => {
+      const records = studentRecords(db, student)
+      return {
+        ...offerCatalog(db, records, search, selected),
+        progress: summarize(records),
+        confirmed: enrollments(db, student, records.curriculum),
+      }
+    },
+    'read',
+  )
 }
 
 export function enroll(db: Db, student: User, sectionId: number) {
   return transaction(db, () => {
     const section = first<Section>(db, 'SELECT * FROM section_details WHERE id=?', sectionId)
     if (!section) throw new HttpError(404, 'Turma não encontrada.')
-    const reason = eligibility(db, student).reason(section)
+    const facts = db
+      .prepare(
+        `SELECT semesterLimit,
+      EXISTS(SELECT 1 FROM history WHERE studentId=? AND subjectId=? AND result='aprovada') AS passed,
+      EXISTS(SELECT 1 FROM enrollments e JOIN sections s ON s.id=e.sectionId
+        WHERE e.studentId=? AND s.subjectId=? AND e.status='ativa') AS enrolled,
+      (SELECT coalesce(sum(hours),0) FROM enrollments WHERE studentId=? AND status='ativa') AS semesterHours
+      FROM courses WHERE id=?`,
+      )
+      .get(student.id, section.subjectId, student.id, section.subjectId, student.id, student.courseId)!
+    const reason = blockingReason(section, {
+      passed: Boolean(facts.passed),
+      enrolled: Boolean(facts.enrolled),
+      semesterHours: Number(facts.semesterHours),
+      semesterLimit: Number(facts.semesterLimit),
+    })
     if (reason) throw new HttpError(409, reason)
     const result = db
       .prepare('INSERT INTO enrollments(studentId,sectionId,hours) VALUES (?,?,?)')
@@ -87,7 +162,11 @@ export function enroll(db: Db, student: User, sectionId: number) {
   })
 }
 
-export function enrollments(db: Db, student: User): Enrollment[] {
+export function enrollments(
+  db: Db,
+  student: User,
+  curriculum = courseCurriculum(db, student.courseId!),
+): Enrollment[] {
   const records = rows<Section & { enrollmentId: number; enrolledHours: number }>(
     db,
     `SELECT s.*,e.id AS enrollmentId,e.hours AS enrolledHours
@@ -95,8 +174,7 @@ export function enrollments(db: Db, student: User): Enrollment[] {
     WHERE e.studentId=? AND e.status='ativa' ORDER BY fold(s.name), s.id`,
     student.id,
   )
-  const curriculum = courseCurriculum(db, student.courseId!)
-  return records.map(({ enrolledHours, ...row }) => ({
+  return withMeetings(db, records).map(({ enrolledHours, ...row }) => ({
     ...row,
     hours: enrolledHours,
     group: classify(curriculum, row.subjectId),

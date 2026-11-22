@@ -44,10 +44,18 @@ export function current(db: Db, req: Request, role?: Role): Session {
     Date.now(),
   )
   if (!user) throw new HttpError(401, 'Entre novamente para continuar.')
+  const expected = req.get('X-Expected-User')
+  if (expected !== undefined && expected !== String(user.id)) throw new SessionChanged()
   if (role && role !== user.role) throw new HttpError(403, 'Esta área pertence a outro perfil.')
   return user
 }
+export class SessionChanged extends HttpError {
+  constructor() {
+    super(409, 'A conta mudou em outra aba. Atualizando a sessão.')
+  }
+}
 export function logout(db: Db, req: Request, res: Response) {
+  if (req.get('X-Expected-User') && cookie(req)) current(db, req)
   db.prepare('DELETE FROM sessions WHERE token=?').run(digest(cookie(req)))
   res.clearCookie(cookieName, cookieOptions).sendStatus(204)
 }

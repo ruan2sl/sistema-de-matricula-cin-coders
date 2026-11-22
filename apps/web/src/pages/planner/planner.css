@@ -1,0 +1,572 @@
+.planner-head {
+  align-items: center;
+  margin-bottom: 25px;
+}
+.planner-head h1 {
+  font-size: clamp(2.5rem, 4.3vw, 4rem);
+}
+.planner-head .eyebrow {
+  margin-bottom: 8px;
+}
+.timetable {
+  background: #fffef9;
+  border: 1px solid #c9cdbf;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.week-head,
+.section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.week-head {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+}
+.week-head h2,
+.section-title h2,
+.plan-progress summary {
+  font: 400 28px/1.18 var(--serif);
+  letter-spacing: -0.04em;
+}
+.check-label {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--soft);
+  font-size: 13px;
+  cursor: pointer;
+}
+.check-label input {
+  margin: 0;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--red);
+  flex: none;
+}
+.week-grid {
+  padding: 0 24px 0 16px;
+}
+.week-axis,
+.week-row {
+  display: grid;
+  grid-template-columns: 78px minmax(0, 1fr);
+}
+.week-axis {
+  height: 34px;
+  color: var(--soft);
+  align-items: center;
+  font-size: 11px;
+}
+.week-axis > div {
+  position: relative;
+}
+.week-axis small {
+  font:
+    11px/1 Consolas,
+    monospace;
+  position: absolute;
+  transform: translate(-50%, -50%);
+}
+.week-axis small:first-child {
+  transform: translate(0, -50%);
+}
+.week-axis small:last-child {
+  transform: translate(-100%, -50%);
+}
+.week-row {
+  border-top: 1px solid #e0e1d6;
+}
+.day-label {
+  display: flex;
+  align-items: center;
+  font-size: 12px;
+  color: #41493d;
+  font-weight: 600;
+}
+.day-track {
+  position: relative;
+  height: calc(10px + var(--lanes) * 40px);
+  min-width: 0;
+  background: repeating-linear-gradient(
+    to right,
+    #dddfd4 0px,
+    #dddfd4 1px,
+    transparent 1px,
+    transparent calc(100% / var(--columns))
+  );
+}
+.no-meeting {
+  font-size: 11px;
+  color: #62685f;
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.tone-0 {
+  --tint: #d9e8e4;
+  --t-ink: #245247;
+  --tone: #478575;
+}
+.tone-1 {
+  --tint: #e1e8f2;
+  --t-ink: #2e4968;
+  --tone: #577da7;
+}
+.tone-2 {
+  --tint: #e2e5f3;
+  --t-ink: #444b77;
+  --tone: #7179a8;
+}
+.tone-3 {
+  --tint: #dce9d5;
+  --t-ink: #38552e;
+  --tone: #688c56;
+}
+.tone-4 {
+  --tint: #f3ddcf;
+  --t-ink: #713c24;
+  --tone: #aa6d49;
+}
+.tone-5 {
+  --tint: #efdee4;
+  --t-ink: #6c374c;
+  --tone: #a96981;
+}
+.time-block {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  height: 36px;
+  min-width: 0;
+  overflow: hidden;
+  text-align: left;
+  white-space: nowrap;
+  padding: 2px 7px;
+  color: var(--t-ink);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: var(--tint);
+  box-shadow: inset 3px 0 var(--tone);
+  transition: filter 0.15s;
+}
+.time-block strong,
+.time-block small {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.time-block strong {
+  font-size: 12px;
+}
+.time-block small {
+  font:
+    10px/1.35 Consolas,
+    monospace;
+}
+.time-block strong span {
+  font-weight: 400;
+}
+.time-block:hover {
+  filter: brightness(0.94);
+}
+.time-block:focus-visible {
+  outline-offset: -3px;
+  z-index: 2;
+}
+.time-block.draft {
+  border: 2px dashed var(--t-ink);
+  box-shadow: none;
+}
+.time-block.confirmed {
+  background: var(--t-ink);
+  color: white;
+  box-shadow: none;
+}
+.week-legend {
+  display: flex;
+  gap: 18px;
+  align-items: center;
+  padding: 11px 18px;
+  border-top: 1px solid var(--line);
+  background: #f3f3e9;
+  font-size: 12px;
+  color: var(--soft);
+}
+.week-legend span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.week-legend i {
+  width: 13px;
+  height: 10px;
+  border-radius: 2px;
+  background: #d5decb;
+  border-left: 3px solid #6d7b60;
+}
+.week-legend .draft {
+  background: transparent;
+  border: 1px dashed #526247;
+}
+.week-legend .confirmed {
+  background: #505e45;
+  border: none;
+}
+.mobile-days,
+.mobile-name {
+  display: none;
+}
+.planner-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(280px, 1fr);
+  grid-template-areas: 'week week' 'catalog selection';
+  gap: 24px;
+}
+.planning-week {
+  grid-area: week;
+  min-width: 0;
+  scroll-margin-top: 12px;
+}
+.catalog {
+  grid-area: catalog;
+}
+.selection {
+  grid-area: selection;
+}
+.catalog,
+.selection {
+  min-width: 0;
+}
+.section-title {
+  margin-bottom: 15px;
+}
+.section-title > span,
+.pick-list p,
+.blank {
+  font-size: 13px;
+  color: var(--soft);
+  line-height: 1.5;
+}
+.catalog .search {
+  max-width: 100%;
+  margin-bottom: 10px;
+}
+.eligible {
+  margin: 0 0 15px;
+}
+.offer-list,
+.pick-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.offer-list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px 0;
+  border-top: 1px solid var(--line);
+}
+.offer-body {
+  flex: 1;
+  min-width: 0;
+}
+.offer-body h3,
+.pick-list h3 {
+  font: 600 16px/1.3 inherit;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+  margin: 3px 0;
+}
+.offer-body p,
+.offer-body small:not(.metadata) {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--soft);
+}
+.offer-list .metadata,
+.pick-list .metadata {
+  font-size: 10px;
+}
+.course-swatch {
+  display: block;
+  margin-top: 6px;
+  width: 11px;
+  height: 11px;
+  flex: none;
+  border-radius: 2px;
+  background: var(--tint);
+  border-left: 3px solid var(--tone);
+}
+.offer-actions {
+  align-self: center;
+}
+.offer-actions .secondary {
+  min-height: 34px;
+  padding: 6px 12px;
+}
+.registered {
+  font-size: 12px;
+  font-weight: 600;
+  color: #34532b;
+}
+.selection {
+  border-left: 1px solid var(--line);
+  padding-left: clamp(18px, 2.6vw, 38px);
+}
+.blank {
+  padding: 12px 0;
+  border-block: 1px solid var(--line);
+}
+.active-title {
+  margin-top: 24px;
+}
+.pick-list li {
+  padding: 12px 0;
+  border-top: 1px solid var(--line);
+}
+.pick-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.pick-list .primary,
+.pick-list .text-btn {
+  font-size: 13px;
+  min-height: 35px;
+  padding: 6px 10px;
+}
+.pick-list .text-btn {
+  padding-left: 0;
+}
+.reason,
+.offer-body p.reason,
+.pick-list p.reason {
+  font-size: 12px;
+  color: #803a29;
+}
+.clashes {
+  margin-top: 12px;
+  border-left: 3px solid #a85629;
+  background: #f5e8d9;
+  padding: 10px 15px;
+  color: #753c24;
+  font-size: 13px;
+}
+.clashes p {
+  margin-top: 3px;
+}
+.plan-progress {
+  border-block: 1px solid var(--line);
+  margin-top: 24px;
+  padding: 16px 0;
+}
+.plan-progress summary {
+  cursor: pointer;
+}
+.plan-progress[open] summary {
+  margin-bottom: 18px;
+}
+.meeting-fields {
+  min-width: 0;
+  border: 1px solid var(--line);
+  padding: 12px;
+}
+.meeting-fields legend {
+  font-size: 14px;
+  font-weight: 650;
+}
+.meeting-fields .secondary {
+  margin-top: 7px;
+  font-size: 12px;
+}
+.meeting-row {
+  display: grid;
+  grid-template-columns: minmax(94px, 1.3fr) minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: end;
+  margin-bottom: 7px;
+}
+.form-stack .meeting-row input,
+.form-stack .meeting-row select {
+  padding: 8px 3px;
+  font-size: 13px;
+}
+.meeting-row button {
+  padding: 4px 6px;
+}
+@media (min-width: 1050px) {
+  .shell:has(.planner-columns) :is(.workspace, .mast-inner, nav > div) {
+    width: min(1400px, calc(100% - 80px));
+  }
+  .planner-columns {
+    grid-template-columns: minmax(0, 1fr) clamp(325px, 29vw, 415px);
+    grid-template-areas: 'week catalog' 'selection catalog';
+    align-items: start;
+    grid-template-rows: auto 1fr;
+    gap: 24px 30px;
+  }
+  .catalog {
+    border-left: 1px solid var(--line);
+    padding-left: 22px;
+  }
+  .catalog .offer-list {
+    max-height: clamp(255px, calc(100dvh - 425px), 610px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
+  }
+  .catalog .offer-list li {
+    gap: 7px;
+    padding: 12px 3px 12px 0;
+  }
+  .catalog .offer-actions .secondary {
+    padding: 5px 8px;
+  }
+  .catalog .pager {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .catalog .pager button {
+    min-height: 32px;
+    padding: 5px 10px;
+  }
+  .selection {
+    border: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+  }
+  .selection .active-title {
+    margin: 0 0 15px;
+  }
+}
+@media (max-width: 760px) {
+  .planning-week {
+    order: -2;
+  }
+  .planner-head {
+    align-items: flex-start;
+  }
+  .planner-head h1 {
+    font-size: 38px;
+  }
+  .week-head {
+    padding: 13px 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  .week-head h2,
+  .section-title h2,
+  .plan-progress summary {
+    font-size: 25px;
+  }
+  .week-head .check-label {
+    min-height: 32px;
+  }
+  .mobile-days {
+    display: flex;
+    border-bottom: 1px solid var(--line);
+    padding: 0 6px;
+    gap: 2px;
+  }
+  .mobile-days button {
+    flex: 1;
+    min-height: 40px;
+    padding: 4px 2px;
+    border: none;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--soft);
+    font-size: 12px;
+  }
+  .mobile-days button[aria-pressed='true'] {
+    border-color: var(--red);
+    color: var(--red);
+    font-weight: 650;
+  }
+  .week-grid {
+    padding: 6px 10px;
+  }
+  .week-row,
+  .week-axis,
+  .day-label {
+    display: none;
+  }
+  .week-row.mobile-current {
+    display: block;
+    border: 0;
+  }
+  .day-track {
+    display: grid;
+    gap: 5px;
+    height: auto;
+    padding: 3px 0;
+    background: none;
+  }
+  .time-block {
+    position: static;
+    width: 100% !important;
+    height: auto;
+    min-height: 45px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    white-space: normal;
+    gap: 1px 8px;
+    padding: 6px 10px;
+  }
+  .time-block .mobile-name {
+    grid-column: 1/-1;
+    display: block;
+    font-size: 12px;
+  }
+  .time-block small {
+    font-size: 11px;
+  }
+  .no-meeting {
+    position: static;
+    transform: none;
+    padding: 10px;
+  }
+  .week-legend {
+    gap: 12px;
+    padding: 9px 12px;
+    font-size: 11px;
+  }
+  .planner-columns {
+    display: flex;
+    flex-direction: column;
+    gap: 22px;
+    margin-top: 20px;
+  }
+  .selection {
+    border-left: none;
+    padding: 0;
+    order: -1;
+  }
+  .section-title {
+    margin-bottom: 8px;
+  }
+  .active-title {
+    margin-top: 16px;
+  }
+  .offer-list li {
+    gap: 8px;
+  }
+  .offer-body h3 {
+    font-size: 15px;
+  }
+  .meeting-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

@@ -2,9 +2,11 @@ import express from 'express'
 import type { ErrorRequestHandler } from 'express'
 import type { Db } from '../db/database.ts'
 import { catalogPage, rows } from '../db/queries.ts'
-import { cancel, enroll, enrollments, offers, progress } from '../domain/student.ts'
-import { createProfessor, openSection, resize, saveSubject } from '../domain/office.ts'
-import { current, login, logout } from './auth.ts'
+import { cancel, enroll, enrollments, offers, planner, progress } from '../domain/student.ts'
+import { withMeetings } from '../domain/meetings.ts'
+import type { Section } from '@matricula/contracts'
+import { changeMeetings, createProfessor, openSection, resize, saveSubject } from '../domain/office.ts'
+import { current, login, logout, SessionChanged } from './auth.ts'
 import { HttpError, integer, parseId, readSearch } from './input.ts'
 
 export function createApp(db: Db) {
@@ -31,6 +33,13 @@ export function createApp(db: Db) {
     next()
   })
   student.get('/ofertas', (req, res) => res.json(offers(db, res.locals.user, readSearch(req.query))))
+  student.get('/planejamento', (req, res) => {
+    const raw = req.query.simular
+    if (raw !== undefined && typeof raw !== 'string')
+      throw new HttpError(400, 'Seleção de turmas inválida.')
+    const selected = raw ? [...new Set(raw.split(',').map(parseId))] : []
+    res.json(planner(db, res.locals.user, readSearch(req.query), selected))
+  })
   student.get('/progresso', (_req, res) => res.json(progress(db, res.locals.user)))
   student.get('/matriculas', (_req, res) => res.json(enrollments(db, res.locals.user)))
   student.post('/matriculas', (req, res) =>
@@ -57,11 +66,16 @@ export function createApp(db: Db) {
   )
   office.post('/professores', (req, res) => res.status(201).json(createProfessor(db, req.body ?? {})))
   office.get('/turmas', (_req, res) =>
-    res.json(rows(db, 'SELECT * FROM section_details ORDER BY fold(name), id')),
+    res.json(
+      withMeetings(db, rows<Section>(db, 'SELECT * FROM section_details ORDER BY fold(name), id')),
+    ),
   )
   office.post('/turmas', (req, res) => res.status(201).json(openSection(db, req.body ?? {})))
   office.patch('/turmas/:id', (req, res) =>
     res.json(resize(db, parseId(req.params.id), req.body?.capacity)),
+  )
+  office.put('/turmas/:id/horarios', (req, res) =>
+    res.json(changeMeetings(db, parseId(req.params.id), req.body?.meetings)),
   )
   office.get('/opcoes', (_req, res) =>
     res.json({
@@ -73,6 +87,7 @@ export function createApp(db: Db) {
     throw new HttpError(404, 'Rota não encontrada.')
   })
   const handleError: ErrorRequestHandler = (error, _req, res, _next) => {
+    if (error instanceof SessionChanged) res.set('X-Session-Changed', '1')
     if (error instanceof HttpError) {
       res.status(error.status).json({ error: error.message })
       return

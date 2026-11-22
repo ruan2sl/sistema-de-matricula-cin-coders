@@ -23,7 +23,13 @@ export interface Professor {
   name: string
   email: string
 }
+export interface Meeting {
+  day: number
+  start: number
+  end: number
+}
 export interface Section {
+  meetings: Meeting[]
   id: number
   subjectId: number
   code: string
@@ -54,6 +60,11 @@ export interface ProgressRow {
   ongoing: number
   remaining: number
   percent: number
+}
+export interface Planner extends Page<Offer> {
+  drafts: Offer[]
+  confirmed: Enrollment[]
+  progress: Progress
 }
 export interface Progress {
   groups: ProgressRow[]

@@ -5,6 +5,7 @@ import { useData } from '../lib/api'
 import { Empty, Notice, Pager, Search, Status } from '../components/shared'
 import { OfficeForm } from './OfficeForms'
 import type { Editor } from './OfficeForms'
+import { scheduleText } from '../lib/week'
 
 function OfficeList({
   title,
@@ -153,6 +154,7 @@ export function Sections() {
                 <th>Turma</th>
                 <th>Disciplina</th>
                 <th>Professor</th>
+                <th>Horários</th>
                 <th>Ocupadas / total</th>
                 <th>Ação</th>
               </tr>
@@ -163,6 +165,13 @@ export function Sections() {
                   <td className="metadata">{item.id}</td>
                   <td>{item.name}</td>
                   <td>{item.professor}</td>
+                  <td>
+                    {scheduleText(item.meetings)}
+                    <br />
+                    <button className="text-btn" onClick={() => edit({ kind: 'schedule', item })}>
+                      Editar horários
+                    </button>
+                  </td>
                   <td>
                     {item.occupied} / {item.capacity}
                   </td>

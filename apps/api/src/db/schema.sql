@@ -27,6 +27,11 @@ CREATE TABLE IF NOT EXISTS sections (
   id INTEGER PRIMARY KEY, subjectId INTEGER NOT NULL REFERENCES subjects, professorId INTEGER NOT NULL REFERENCES professors,
   capacity INTEGER NOT NULL CHECK (capacity >= 1)
 );
+CREATE TABLE IF NOT EXISTS meetings (
+  sectionId INTEGER NOT NULL REFERENCES sections(id), day INTEGER NOT NULL CHECK(day BETWEEN 1 AND 7),
+  start INTEGER NOT NULL CHECK(start >= 0), end INTEGER NOT NULL CHECK(end <= 1440 AND end > start),
+  PRIMARY KEY(sectionId,day,start)
+);
 CREATE TABLE IF NOT EXISTS history (
   id INTEGER PRIMARY KEY, studentId INTEGER NOT NULL REFERENCES users, subjectId INTEGER NOT NULL REFERENCES subjects,
   result TEXT NOT NULL CHECK (result IN ('aprovada','reprovada')), hours INTEGER NOT NULL CHECK (hours BETWEEN 15 AND 120 AND hours % 15=0)

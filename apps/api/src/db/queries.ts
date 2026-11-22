@@ -8,15 +8,19 @@ export function first<T>(db: Db, sql: string, ...params: SQLInputValue[]): T | u
   return db.prepare(sql).get(...params) as unknown as T | undefined
 }
 
+export function pagination(total: number, requested: number) {
+  const pageSize = 6
+  return { total, pageSize, page: Math.min(requested, Math.max(1, Math.ceil(total / pageSize))) }
+}
+
 export function catalogPage<T>(
   db: Db,
   source: 'subjects' | 'section_details',
   search: { q: string; page: number },
 ) {
-  const pageSize = 6
   const where = 'WHERE instr(fold(code || char(32) || name), fold(?)) > 0'
   const total = Number(db.prepare(`SELECT count(*) AS n FROM ${source} ${where}`).get(search.q)!.n)
-  const page = Math.min(search.page, Math.max(1, Math.ceil(total / pageSize)))
+  const { page, pageSize } = pagination(total, search.page)
   const items = rows<T>(
     db,
     `SELECT * FROM ${source} ${where} ORDER BY fold(name), id LIMIT ? OFFSET ?`,

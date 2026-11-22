@@ -1,5 +1,6 @@
 import type { Db } from '../db/database.ts'
 import { transaction } from '../db/database.ts'
+import { parseMeetings, replaceMeetings } from './meetings.ts'
 import { HttpError, integer, stringField } from '../http/input.ts'
 
 export function saveSubject(db: Db, data: Record<string, unknown>, id?: number) {
@@ -51,13 +52,25 @@ export function openSection(db: Db, data: Record<string, unknown>) {
     throw new HttpError(404, 'Disciplina não encontrada.')
   if (!db.prepare('SELECT id FROM professors WHERE id=?').get(professor))
     throw new HttpError(404, 'Professor não encontrado.')
-  return {
-    id: Number(
+  const slots = parseMeetings(data.meetings === undefined ? [] : data.meetings)
+  return transaction(db, () => {
+    const id = Number(
       db
         .prepare('INSERT INTO sections(subjectId,professorId,capacity) VALUES (?,?,?)')
         .run(subject, professor, capacity).lastInsertRowid,
-    ),
-  }
+    )
+    replaceMeetings(db, id, slots)
+    return { id }
+  })
+}
+export function changeMeetings(db: Db, id: number, input: unknown) {
+  const slots = parseMeetings(input)
+  return transaction(db, () => {
+    if (!db.prepare('SELECT id FROM sections WHERE id=?').get(id))
+      throw new HttpError(404, 'Turma não encontrada.')
+    replaceMeetings(db, id, slots)
+    return { id }
+  })
 }
 export function resize(db: Db, id: number, value: unknown) {
   const capacity = integer(value, 'as vagas')

@@ -29,5 +29,7 @@ export function readSearch(query: Record<string, unknown>) {
   if (query.q !== undefined && (typeof query.q !== 'string' || query.q.length > 120)) {
     throw new HttpError(400, 'A busca aceita até 120 caracteres.')
   }
-  return { page, q: String(query.q ?? '').trim() }
+  if (query.elegiveis !== undefined && query.elegiveis !== '1' && query.elegiveis !== '0')
+    throw new HttpError(400, 'Filtro de elegibilidade inválido.')
+  return { page, q: String(query.q ?? '').trim(), eligible: query.elegiveis === '1' }
 }

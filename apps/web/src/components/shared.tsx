@@ -60,7 +60,9 @@ export function Notice({ text, error = false }: { text: string; error?: boolean 
   ) : null
 }
 export function searchUrl(q: string, page = 1) {
-  const params = new URLSearchParams()
+  const params = new URLSearchParams(location.search)
+  params.delete('q')
+  params.delete('page')
   if (q.trim()) params.set('q', q.trim())
   if (page > 1) params.set('page', String(page))
   return location.pathname + (params.size ? '?' + params : '')

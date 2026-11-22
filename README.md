@@ -32,6 +32,16 @@ A carga inicial cria os dois cursos, seus currículos, usuários, professores, d
 4. Cancele a matrícula de Ana e atualize as ofertas de Bruno. Ele pode ocupar a vaga liberada. Para testar uma reprovação anterior, Ana pode cursar Algoritmos e Estruturas de Dados.
 5. Na secretaria, cadastre uma disciplina e um professor, abra uma turma e ajuste as vagas. A listagem mostra a ocupação real.
 
+## Planejar uma semana
+
+Na área do aluno, a grade, o catálogo, a seleção, as matrículas e o progresso ficam na mesma página. Clique em um bloco ou em **Simular** no catálogo. A seleção muda a grade na hora e fica salva nesta aba para o mesmo aluno, inclusive após buscar outra página ou recarregar. **Confirmar matrícula** envia o pedido à API, que verifica novamente as vagas e a elegibilidade.
+
+Para ver um conflito, simule Banco de Dados (T1) e Design de Interação (T3). Os encontros se sobrepõem na segunda, das 09:00 às 10:00. **Mostrar ofertas da página** alterna a camada do catálogo. O filtro **Somente turmas em que posso me matricular** é aplicado antes da paginação. Na versão móvel, os botões dos dias abrem a agenda correspondente.
+
+Os encontros usam dia da semana (segunda = 1, domingo = 7) e minutos desde meia-noite. A grade ordena os encontros de cada dia pelo início e reutiliza a primeira linha que estiver livre. Dois encontros consecutivos podem usar a mesma linha. A interface sinaliza sobreposições entre turmas selecionadas ou confirmadas, e o aluno decide quais confirmar. Turmas com horário a definir aparecem na lista. A secretaria pode cadastrar vários encontros ao abrir uma turma ou alterá-los depois em **Editar horários**.
+
+Na primeira abertura de uma base anterior, a aplicação cria a tabela de encontros e preenche os horários das turmas de demonstração reconhecidas. As demais aguardam cadastro pela secretaria.
+
 ## Organização e decisões
 
 | Caminho                           | Responsabilidade                                                         |
@@ -80,6 +90,10 @@ Uma página contém `items`, `page`, `pageSize` (6) e `total`. As listagens orde
 
 Erros seguem o formato `{ "error": "Turma lotada." }`. A API usa 400 para entradas inválidas, 401 para sessão ausente ou expirada, 403 para perfil incorreto, 404 para recurso inacessível ou inexistente e 409 para conflito de negócio. Cadastros e matrículas retornam 201 com o identificador. O cancelamento retorna 204.
 
+O planejamento completo vem de `GET /api/aluno/planejamento?q=IF690&page=1&elegiveis=1&simular=1,3`. Todos os parâmetros são opcionais. A resposta inclui a página de ofertas, os detalhes das turmas simuladas, as matrículas confirmadas e o progresso do aluno. As simuladas continuam disponíveis quando ficam fora da busca.
+
+Ao abrir uma turma, a secretaria pode incluir `meetings` no corpo de `POST /api/secretaria/turmas`. Para substituir os encontros de uma turma, use `PUT /api/secretaria/turmas/:id/horarios` com `{"meetings":[{"day":1,"start":480,"end":600}]}`. Uma lista vazia deixa o horário a definir.
+
 ## Testes
 
 ```sh
@@ -88,6 +102,8 @@ npm run build
 ```
 
 Os testes usam bancos isolados. Exercitam as regras pelo HTTP, o cálculo puro de progresso e a disputa real pela última vaga com duas conexões em threads diferentes. Os cenários incluem reprovação seguida de nova matrícula, privacidade entre alunos, alterações de capacidade, excesso de perfil e os limites exatos da CH.
+
+Para os testes de navegador, instale o Chromium do Playwright uma vez com `npx playwright install chromium` e rode `npm run test:e2e`. Cada cenário usa um banco em memória. Há cobertura de simulação e confirmação, choques e horários consecutivos, paginação, agenda em 360px, edição pela secretaria e troca de conta entre abas.
 
 ## Com mais tempo
 

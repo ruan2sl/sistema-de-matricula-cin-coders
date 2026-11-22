@@ -1,12 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { pathToFileURL } from 'node:url'
-import { openDatabase, transaction } from './db/database.ts'
+import { loadDemoMeetings, openDatabase, transaction } from './db/database.ts'
 import type { Db } from './db/database.ts'
 
 export function seed(db: Db) {
   return transaction(db, () => {
     if (db.prepare('SELECT id FROM courses LIMIT 1').get()) return false
     db.exec(readFileSync(new URL('./db/demo.sql', import.meta.url), 'utf8'))
+    loadDemoMeetings(db)
     return true
   })
 }

@@ -1,5 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
+let expectedUser: number | undefined
+export function setExpectedUser(id?: number) {
+  expectedUser = id
+}
 export class ApiError extends Error {
   status: number
   constructor(status: number, message: string) {
@@ -13,13 +17,17 @@ export async function api<T>(
   data?: unknown,
   signal?: AbortSignal,
 ): Promise<T> {
+  const headers = new Headers()
+  if (data !== undefined) headers.set('Content-Type', 'application/json')
+  if (expectedUser !== undefined && (path !== '/sessao' || method === 'DELETE'))
+    headers.set('X-Expected-User', String(expectedUser))
   let response: Response
   try {
     response = await fetch('/api' + path, {
       method,
       signal,
       credentials: 'same-origin',
-      headers: data === undefined ? undefined : { 'Content-Type': 'application/json' },
+      headers,
       body: data === undefined ? undefined : JSON.stringify(data),
     })
   } catch (error) {
@@ -28,15 +36,21 @@ export async function api<T>(
   }
   if (!response.ok) {
     const body = await response.json().catch(() => ({}))
-    if (response.status === 401 && path !== '/sessao') window.dispatchEvent(new Event('sessao-expirada'))
+    if (!signal?.aborted) {
+      if (response.headers.get('X-Session-Changed')) dispatchEvent(new Event('session-change'))
+      else if (response.status === 401 && path !== '/sessao') dispatchEvent(new Event('sessao-expirada'))
+    }
     throw new ApiError(response.status, body.error || 'Falha na comunicação com o servidor.')
   }
+  if (method !== 'GET' && path !== '/sessao')
+    localStorage.setItem('matricula:dados', crypto.randomUUID())
   return response.status === 204 ? (undefined as T) : response.json()
 }
 type State<T> = { key: string; data?: T; error?: string }
-export function useData<T>(path: string) {
+export function useData<T>(path: string, keepPrevious = false) {
   const [revision, setRevision] = useState(0)
   const key = path + '#' + revision
+  const retry = useCallback(() => setRevision((value) => value + 1), [])
   const [state, setState] = useState<State<T>>({ key: '' })
   useEffect(() => {
     const controller = new AbortController()
@@ -45,14 +59,16 @@ export function useData<T>(path: string) {
         if (!controller.signal.aborted) setState({ key, data })
       },
       (error) => {
-        if (!controller.signal.aborted) setState({ key, error: error.message })
+        if (!controller.signal.aborted)
+          setState((old) => ({ key, error: error.message, data: keepPrevious ? old.data : undefined }))
       },
     )
     return () => controller.abort()
-  }, [path, key])
+  }, [path, key, keepPrevious])
   return {
-    data: state.key === key ? state.data : undefined,
+    pending: state.key !== key,
+    data: state.key === key || keepPrevious ? state.data : undefined,
     error: state.key === key ? state.error : undefined,
-    retry: () => setRevision((value) => value + 1),
+    retry,
   }
 }

@@ -3,12 +3,14 @@ import type { FormEvent } from 'react'
 import type { Professor, Section, Subject } from '@matricula/contracts'
 import { api, useData } from '../lib/api'
 import { Modal, Notice, Status } from '../components/shared'
+import { MeetingFields, readMeetings } from '../components/MeetingFields'
 
 export type Editor =
   | { kind: 'subject'; item?: Subject }
   | { kind: 'professor' }
   | { kind: 'section' }
   | { kind: 'capacity'; item: Section }
+  | { kind: 'schedule'; item: Section }
 function SectionFields() {
   const options = useData<{
     subjects: Pick<Subject, 'id' | 'code' | 'name'>[]
@@ -63,6 +65,7 @@ export function OfficeForm({
     professor: 'Cadastrar professor',
     capacity: 'Alterar vagas',
     section: 'Abrir turma',
+    schedule: 'Editar horários',
   }
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -92,7 +95,13 @@ export function OfficeForm({
           await api('/secretaria/turmas', 'POST', {
             subjectId: Number(form.get('subjectId')),
             professorId: Number(form.get('professorId')),
+            meetings: readMeetings(form),
             capacity: Number(form.get('capacity')),
+          })
+          break
+        case 'schedule':
+          await api('/secretaria/turmas/' + editor.item.id + '/horarios', 'PUT', {
+            meetings: readMeetings(form),
           })
           break
         case 'capacity':
@@ -153,6 +162,9 @@ export function OfficeForm({
           </>
         )}
         {editor.kind === 'section' && <SectionFields />}
+        {(editor.kind === 'section' || editor.kind === 'schedule') && (
+          <MeetingFields initial={editor.kind === 'schedule' ? editor.item.meetings : []} />
+        )}
         {editor.kind === 'capacity' && (
           <p>
             {editor.item.name} · Turma {editor.item.id}
