@@ -322,14 +322,29 @@
 .calendar-key span:first-child {
   color: var(--wine);
 }
-.enrolled-panel,
 .preview-note,
 .plan-progress {
   margin-top: 14px;
 }
+.enrolled-panel {
+  margin-top: 28px;
+  padding: clamp(16px, 2vw, 28px);
+  scroll-margin-top: 16px;
+}
 .enrolled-panel article {
-  padding: 10px 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
   border-top: 1px solid var(--line);
+}
+@media (max-width: 760px) {
+  .enrolled-panel article {
+    grid-template-columns: 1fr;
+    justify-items: start;
+    gap: 8px;
+  }
 }
 .clashes,
 .preview-note {

@@ -158,9 +158,9 @@ export function PlannerPage({ query, destination }: { query: string; destination
               {c.first.name} e {c.second.name}
             </p>
           ))}
-          <Selection confirmed={data.confirmed} locked={locked} cancel={setCancel} />
         </div>
       </div>
+      <Selection confirmed={data.confirmed} locked={locked} cancel={setCancel} />
       <details id="progresso" className="plan-progress">
         <summary>Progresso no curso</summary>
         <CourseProgress data={data.progress} />
