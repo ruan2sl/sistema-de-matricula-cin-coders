@@ -106,10 +106,19 @@ test('ofertas e disciplinas têm paginação estável, busca sem acento e classi
     office = await account('secretaria')
   const page = (await (await ana('/aluno/ofertas')).json()) as Page<Offer>
   const next = (await (await ana('/aluno/ofertas?page=2')).json()) as Page<Offer>
-  assert.equal(page.total, 9)
+  assert.equal(page.total, 8)
   assert.equal(page.items.length, 6)
-  assert.equal(next.items.length, 3)
-  assert.equal(new Set([...page.items, ...next.items].map((o) => o.id)).size, 9)
+  assert.equal(next.items.length, 2)
+  assert.equal(new Set([...page.items, ...next.items].map((o) => o.id)).size, 8)
+  for (const route of ['/aluno/ofertas', '/aluno/planejamento']) {
+    const query = route + '?agrupar=disciplina&q=IF669'
+    const retry = await (await ana(query)).json()
+    assert.equal(retry.total, route === '/aluno/ofertas' ? 2 : 1)
+    assert.equal(retry.items.length, 2)
+    const passed = await (await bruno(query)).json()
+    assert.equal(passed.total, 0)
+    assert.deepEqual(passed.items, [])
+  }
   for (const [client, group] of [
     [ana, 'obrigatoria'],
     [bruno, 'perfil'],

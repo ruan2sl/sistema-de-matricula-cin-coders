@@ -4,7 +4,6 @@ import type {
   Goals,
   Group,
   Offer,
-  Page,
   Planner,
   Progress,
   Section,
@@ -12,7 +11,7 @@ import type {
 } from '@matricula/contracts'
 import type { Db } from '../db/database.ts'
 import { transaction } from '../db/database.ts'
-import { catalogPage, first, rows, pagination } from '../db/queries.ts'
+import { first, rows, pagination } from '../db/queries.ts'
 import { HttpError } from '../http/input.ts'
 import { withMeetings } from './meetings.ts'
 import { blockingReason } from './eligibility.ts'
@@ -84,27 +83,22 @@ function offerCatalog(db: Db, records: Records, search: Search, selected: number
     })
     return { ...section, group: classify(curriculum, section.subjectId), unavailable }
   }
-  let page: Page<Offer>
-  if (search.eligible || search.grouped) {
-    const matching = rows<Section>(
-      db,
-      `SELECT * FROM section_details
-      WHERE instr(fold(code || ' ' || name),fold(?))>0 ORDER BY fold(name),id`,
-      search.q,
-    )
-      .map(classifyOffer)
-      .filter((offer) => !search.eligible || offer.unavailable === null)
-    const units = search.grouped
-      ? [...new Set(matching.map((s) => s.subjectId))]
-      : matching.map((s) => s.id)
-    const result = pagination(units.length, search.page)
-    const offset = (result.page - 1) * result.pageSize
-    const visible = new Set(units.slice(offset, offset + result.pageSize))
-    page = { ...result, items: matching.filter((s) => visible.has(search.grouped ? s.subjectId : s.id)) }
-  } else {
-    const result = catalogPage<Section>(db, 'section_details', search)
-    page = { ...result, items: result.items.map(classifyOffer) }
-  }
+  const matching = rows<Section>(
+    db,
+    `SELECT * FROM section_details
+    WHERE instr(fold(code || ' ' || name),fold(?))>0 ORDER BY fold(name),id`,
+    search.q,
+  )
+    .filter(section => !passed.has(section.subjectId))
+    .map(classifyOffer)
+    .filter((offer) => !search.eligible || offer.unavailable === null)
+  const units = search.grouped
+    ? [...new Set(matching.map((s) => s.subjectId))]
+    : matching.map((s) => s.id)
+  const result = pagination(units.length, search.page)
+  const offset = (result.page - 1) * result.pageSize
+  const visible = new Set(units.slice(offset, offset + result.pageSize))
+  const page = { ...result, items: matching.filter((s) => visible.has(search.grouped ? s.subjectId : s.id)) }
   const drafts = selected.length
     ? rows<Section>(
         db,
