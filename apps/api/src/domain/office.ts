@@ -1,3 +1,4 @@
+import { fillVacancies } from './enrollment.ts'
 import type { Db } from '../db/database.ts'
 import { transaction } from '../db/database.ts'
 import { parseMeetings, replaceMeetings } from './meetings.ts'
@@ -80,6 +81,7 @@ export function resize(db: Db, id: number, value: unknown) {
     if (capacity < Number(section.occupied))
       throw new HttpError(409, `Já existem ${section.occupied} matrículas ativas nesta turma.`)
     db.prepare('UPDATE sections SET capacity=? WHERE id=?').run(capacity, id)
+    fillVacancies(db, id)
     return { id }
   })
 }

@@ -1,3 +1,4 @@
+import { enrollStudent, fillVacancies, waitingEntries } from './enrollment.ts'
 import type {
   Enrollment,
   HistoryEntry,
@@ -14,7 +15,7 @@ import { transaction } from '../db/database.ts'
 import { first, rows, pagination } from '../db/queries.ts'
 import { HttpError } from '../http/input.ts'
 import { withMeetings } from './meetings.ts'
-import { blockingReason } from './eligibility.ts'
+import { blockingReason, fullSection } from './eligibility.ts'
 import { calculateProgress, classify } from './progress.ts'
 import type { Credit } from './progress.ts'
 
@@ -81,7 +82,7 @@ function offerCatalog(db: Db, records: Records, search: Search, selected: number
       semesterHours,
       semesterLimit,
     })
-    return { ...section, group: classify(curriculum, section.subjectId), unavailable }
+    return { ...section, canWait: unavailable === fullSection, group: classify(curriculum, section.subjectId), unavailable }
   }
   const matching = rows<Section>(
     db,
@@ -128,6 +129,7 @@ export function planner(db: Db, student: User, search: Search, selected: number[
       return {
         ...offerCatalog(db, records, search, selected),
         progress: summarize(records),
+        waitlist: waitingEntries(db, student.id),
         confirmed: enrollments(db, student, records.curriculum),
       }
     },
@@ -136,31 +138,7 @@ export function planner(db: Db, student: User, search: Search, selected: number[
 }
 
 export function enroll(db: Db, student: User, sectionId: number) {
-  return transaction(db, () => {
-    const section = first<Section>(db, 'SELECT * FROM section_details WHERE id=?', sectionId)
-    if (!section) throw new HttpError(404, 'Turma não encontrada.')
-    const facts = db
-      .prepare(
-        `SELECT semesterLimit,
-      EXISTS(SELECT 1 FROM history WHERE studentId=? AND subjectId=? AND result='aprovada') AS passed,
-      EXISTS(SELECT 1 FROM enrollments e JOIN sections s ON s.id=e.sectionId
-        WHERE e.studentId=? AND s.subjectId=? AND e.status='ativa') AS enrolled,
-      (SELECT coalesce(sum(hours),0) FROM enrollments WHERE studentId=? AND status='ativa') AS semesterHours
-      FROM courses WHERE id=?`,
-      )
-      .get(student.id, section.subjectId, student.id, section.subjectId, student.id, student.courseId)!
-    const reason = blockingReason(section, {
-      passed: Boolean(facts.passed),
-      enrolled: Boolean(facts.enrolled),
-      semesterHours: Number(facts.semesterHours),
-      semesterLimit: Number(facts.semesterLimit),
-    })
-    if (reason) throw new HttpError(409, reason)
-    const result = db
-      .prepare('INSERT INTO enrollments(studentId,sectionId,hours) VALUES (?,?,?)')
-      .run(student.id, section.id, section.hours)
-    return { id: Number(result.lastInsertRowid) }
-  })
+  return enrollStudent(db, student.id, sectionId)
 }
 
 export function enrollments(
@@ -182,8 +160,10 @@ export function enrollments(
   }))
 }
 export function cancel(db: Db, studentId: number, id: number) {
-  const result = db
-    .prepare("UPDATE enrollments SET status='cancelada' WHERE id=? AND studentId=? AND status='ativa'")
-    .run(id, studentId)
-  if (!result.changes) throw new HttpError(404, 'Matrícula ativa não encontrada.')
+  return transaction(db, () => {
+    const row = db.prepare(`UPDATE enrollments SET status='cancelada'
+      WHERE id=? AND studentId=? AND status='ativa' RETURNING sectionId`).get(id, studentId)
+    if (!row) throw new HttpError(404, 'Matrícula ativa não encontrada.')
+    fillVacancies(db, Number(row.sectionId))
+  })
 }

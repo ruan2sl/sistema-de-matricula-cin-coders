@@ -7,6 +7,7 @@ import { Brand, Notice } from '../components/shared'
 const accounts = [
   { username: 'ana', name: 'Ana Lima', role: 'Ciência da Computação' },
   { username: 'bruno', name: 'Bruno Costa', role: 'Sistemas de Informação' },
+  { username: 'carla', name: 'Carla Alves', role: 'Ciência da Computação' },
   { username: 'secretaria', name: 'Secretaria', role: 'Gestão de turmas' },
 ]
 export function Login({ onLogin, expired }: { onLogin: (user: Session) => void; expired: boolean }) {

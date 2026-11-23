@@ -1,3 +1,4 @@
+import { joinQueue, leaveQueue } from '../domain/enrollment.ts'
 import express from 'express'
 import type { ErrorRequestHandler } from 'express'
 import type { Db } from '../db/database.ts'
@@ -46,6 +47,13 @@ export function createApp(db: Db) {
         selected,
       ),
     )
+  })
+  student.post('/espera', (req, res) =>
+    res.status(201).json(joinQueue(db, res.locals.user.id, integer(req.body?.sectionId, 'a turma'))),
+  )
+  student.delete('/espera/:id', (req, res) => {
+    leaveQueue(db, res.locals.user.id, parseId(req.params.id))
+    res.sendStatus(204)
   })
   student.get('/progresso', (_req, res) => res.json(progress(db, res.locals.user)))
   student.get('/matriculas', (_req, res) => res.json(enrollments(db, res.locals.user)))

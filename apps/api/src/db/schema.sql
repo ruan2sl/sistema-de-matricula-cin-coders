@@ -48,3 +48,12 @@ CREATE VIEW IF NOT EXISTS section_details AS
   SELECT s.id, d.id AS subjectId, d.code, d.name, d.hours, p.name AS professor, s.capacity,
     (SELECT count(*) FROM enrollments e WHERE e.sectionId=s.id AND e.status='ativa') AS occupied
   FROM sections s JOIN subjects d ON d.id=s.subjectId JOIN professors p ON p.id=s.professorId;
+
+CREATE TABLE IF NOT EXISTS waitlist (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  studentId INTEGER NOT NULL REFERENCES users,
+  sectionId INTEGER NOT NULL REFERENCES sections,
+  reason TEXT
+);
+CREATE UNIQUE INDEX IF NOT EXISTS waiting_student ON waitlist(sectionId, studentId) WHERE reason IS NULL;
+CREATE INDEX IF NOT EXISTS queue_order ON waitlist(sectionId, id) WHERE reason IS NULL;

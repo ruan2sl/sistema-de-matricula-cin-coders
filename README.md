@@ -29,6 +29,7 @@ O comando `npm run seed` carrega os cursos, as estruturas curriculares, os aluno
 | ------------ | ---------- | ---------------------- |
 | `ana`        | Aluna      | Ciência da Computação  |
 | `bruno`      | Aluno      | Sistemas de Informação |
+| `carla`      | Aluna      | Ciência da Computação  |
 | `secretaria` | Secretaria | —                      |
 
 Banco de Dados (`IF690`) é obrigatória para Ana e eletiva de perfil para Bruno. Redes de Computadores (`IF677`) é eletiva de perfil para Ana e obrigatória para Bruno.
@@ -49,7 +50,7 @@ A carga inicial cria os dois cursos, seus currículos, usuários, professores, d
 1. Entre como Ana e busque `IF690`. Banco de Dados é obrigatória em Ciência da Computação. A turma começa com uma vaga.
 2. Matricule Ana. Em **Progresso**, as obrigatórias passam de 0h para 60h em curso. As horas integralizadas continuam em 60h. Ana já tinha 120h aprovadas em eletivas de perfil para uma exigência de 90h. As 30h excedentes aparecem em eletivas livres.
 3. Em outra sessão, entre como Bruno e busque a mesma turma. Para ele, Banco de Dados é eletiva de perfil. A oferta mostra a lotação.
-4. Cancele a matrícula de Ana e atualize as ofertas de Bruno. Ele pode ocupar a vaga liberada. Para testar uma reprovação anterior, Ana pode cursar Algoritmos e Estruturas de Dados.
+4. Cancele a matrícula de Ana e atualize as ofertas de Bruno. Se Bruno entrar na lista de espera antes do cancelamento, a matrícula dele será automática. Para testar uma reprovação anterior, Ana pode cursar Algoritmos e Estruturas de Dados.
 5. Na secretaria, cadastre uma disciplina e um professor, abra uma turma e ajuste as vagas. A listagem mostra a ocupação real.
 
 ## Planejar uma semana
@@ -84,7 +85,9 @@ Na primeira abertura de uma base anterior, a aplicação cria a tabela de encont
 
 **Alterações de carga horária.** Histórico e matrícula guardam a CH vigente quando o registro foi criado. Uma edição da disciplina vale para novas matrículas e preserva os compromissos e créditos anteriores.
 
-**Requisito escolhido — limite de CH por semestre.** Essa regra usa o curso e as matrículas que o sistema já conhece. Cada curso tem um teto definido na carga inicial (360h em Ciência da Computação, 300h em Sistemas de Informação). A API soma as horas ativas antes de matricular. A soma pode ser igual ao teto. Se a turma exceder o saldo, a oferta informa o motivo e a API recusa a operação, mesmo quando o pedido é feito diretamente. Cancelar devolve o saldo. A tela de ofertas e a de progresso exibem o consumo atual.
+**Requisito escolhido — lista de espera por turma.** A fila permite disputar uma vaga sem precisar consultar repetidamente uma turma lotada. Em **Ofertas**, o aluno elegível entra uma vez por turma. Em **Minhas matrículas**, consulta a posição ou sai da fila. A espera não consome CH. Cancelar uma matrícula ou ampliar a capacidade promove os primeiros alunos elegíveis em ordem de entrada, dentro da mesma transação que libera as vagas. A API revalida aprovação, matrícula na disciplina e limite de CH. Se o aluno perdeu a elegibilidade, a inscrição é encerrada com o motivo visível no portal e a vaga passa ao próximo. Turmas diferentes da mesma disciplina têm filas independentes.
+
+**Limite de CH por semestre.** Essa regra usa o curso e as matrículas que o sistema já conhece. Cada curso tem um teto definido na carga inicial (360h em Ciência da Computação, 300h em Sistemas de Informação). A API soma as horas ativas antes de matricular. A soma pode ser igual ao teto. Se a turma exceder o saldo, a oferta informa o motivo e a API recusa a operação, mesmo quando o pedido é feito diretamente. Cancelar devolve o saldo. A tela de ofertas e a de progresso exibem o consumo atual.
 
 **Interface.** A URL guarda a busca e a página atual, inclusive ao recarregar ou usar o botão Voltar. A busca ignora acentos e maiúsculas. As listas distinguem carregamento, ausência de dados, busca sem resultado e falha de comunicação. O aluno pode usar o portal a partir de 360px. A secretaria usa tabelas em desktop.
 
@@ -100,6 +103,7 @@ As rotas abaixo usam o prefixo `/api`. Envie JSON nas requisições com corpo. O
 | GET          | `/aluno/matriculas`                                       | Matrículas ativas do usuário                                             |
 | POST         | `/aluno/matriculas`                                       | `{ "sectionId": 1 }`                                                     |
 | DELETE       | `/aluno/matriculas/:id`                                   | Cancelar a matrícula pelo seu identificador                              |
+| POST / DELETE | `/aluno/espera` / `/aluno/espera/:id` | Entrar com `{ "sectionId": 1 }` ou sair pela identificação da inscrição. O planejamento retorna posição e motivo de encerramento. |
 | GET          | `/aluno/progresso`                                        | CH exigida, integralizada, em curso, faltante e percentual de cada grupo |
 | GET          | `/secretaria/disciplinas?q=IF&page=1`                     | Listagem paginada                                                        |
 | POST / PUT   | `/secretaria/disciplinas` / `/secretaria/disciplinas/:id` | `{ "code": "IF710", "name": "Compiladores", "hours": 60 }`               |

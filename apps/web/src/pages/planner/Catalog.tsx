@@ -8,13 +8,15 @@ interface Props {
   q: string
   eligible: boolean
   filter: (v: boolean) => void
+  waiting: Set<number>
+  join: (id: number) => void
   confirmed: Set<number>
   preview: Set<number>
   view: (s: Offer) => void
   enroll: (s: Offer) => void
   locked: boolean
 }
-export function Catalog({ data, q, eligible, filter, confirmed, preview, view, enroll, locked }: Props) {
+export function Catalog({ data, q, eligible, filter, waiting, join, confirmed, preview, view, enroll, locked }: Props) {
   const groups = new Map<number, Offer[]>()
   for (const offer of data.items) {
     const list = groups.get(offer.subjectId) ?? []
@@ -37,7 +39,7 @@ export function Catalog({ data, q, eligible, filter, confirmed, preview, view, e
       {!data.items.length && <Empty q={q} message="Nenhuma turma disponível para este filtro." />}
       <ul className="offer-cards">
         {Array.from(groups, ([id, options]) => (
-          <CourseCard key={id} options={options} {...{ confirmed, preview, view, enroll, locked }} />
+          <CourseCard key={id} options={options} {...{ waiting, join, confirmed, preview, view, enroll, locked }} />
         ))}
       </ul>
       <Pager page={data} q={q} />
@@ -46,12 +48,14 @@ export function Catalog({ data, q, eligible, filter, confirmed, preview, view, e
 }
 function CourseCard({
   options,
+  waiting,
+  join,
   confirmed,
   preview,
   view,
   enroll,
   locked,
-}: Pick<Props, 'confirmed' | 'preview' | 'view' | 'enroll' | 'locked'> & { options: Offer[] }) {
+}: Pick<Props, 'waiting' | 'join' | 'confirmed' | 'preview' | 'view' | 'enroll' | 'locked'> & { options: Offer[] }) {
   const [chosen, setChosen] = useState<number | null>(null)
   const s =
     options.find((o) => o.id === chosen) ??
@@ -96,9 +100,13 @@ function CourseCard({
             <button className="secondary" aria-pressed={preview.has(s.id)} onClick={() => view(s)}>
               {preview.has(s.id) ? 'Fechar prévia' : 'Ver na grade'}
             </button>
-            <button className="primary" disabled={locked || !!s.unavailable} onClick={() => enroll(s)}>
+            {s.canWait ? (
+              <button className="primary" disabled={locked || waiting.has(s.id)} onClick={() => join(s.id)}>
+                {waiting.has(s.id) ? 'Na lista de espera' : 'Entrar na lista de espera'}
+              </button>
+            ) : <button className="primary" disabled={locked || !!s.unavailable} onClick={() => enroll(s)}>
               Matricular-se
-            </button>
+            </button>}
           </div>
           {s.unavailable && <small>{s.unavailable}</small>}
         </>

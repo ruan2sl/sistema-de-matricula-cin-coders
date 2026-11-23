@@ -102,6 +102,19 @@ export function PlannerPage({ query, destination }: { query: string; destination
       retry()
     }
   }
+  async function changeQueue(id: number, action: 'join' | 'leave') {
+    setBusy(true)
+    try {
+      if (action === 'join') await api('/aluno/espera', 'POST', { sectionId: id })
+      else await api('/aluno/espera/' + id, 'DELETE')
+      setNotice({ text: action === 'join' ? 'Você entrou na lista de espera.' : 'Você saiu da lista de espera.', error: false })
+    } catch (e) {
+      setNotice({ text: (e as Error).message, error: true })
+    } finally {
+      setBusy(false)
+      retry()
+    }
+  }
   const locked = busy || pending || !!error
   return (
     <div id="planejamento">
@@ -134,6 +147,8 @@ export function PlannerPage({ query, destination }: { query: string; destination
           confirmed={confirmed}
           preview={new Set(candidates.map(s => s.id))}
           locked={locked}
+          waiting={new Set(data.waitlist.filter(entry => entry.position !== null).map(entry => entry.sectionId))}
+          join={id => changeQueue(id, 'join')}
           enroll={save}
           view={(s) => {
             togglePreview(s)
@@ -160,7 +175,7 @@ export function PlannerPage({ query, destination }: { query: string; destination
           ))}
         </div>
       </div>
-      <Selection confirmed={data.confirmed} locked={locked} cancel={setCancel} />
+      <Selection waitlist={data.waitlist} leave={id => changeQueue(id, 'leave')} confirmed={data.confirmed} locked={locked} cancel={setCancel} />
       <details id="progresso" className="plan-progress">
         <summary>Progresso no curso</summary>
         <CourseProgress data={data.progress} />

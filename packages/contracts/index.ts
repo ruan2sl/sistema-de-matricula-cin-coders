@@ -40,6 +40,7 @@ export interface Section {
   occupied: number
 }
 export interface Offer extends Section {
+  canWait: boolean
   group: Group
   unavailable: string | null
 }
@@ -61,7 +62,16 @@ export interface ProgressRow {
   remaining: number
   percent: number
 }
+export interface WaitEntry {
+  id: number
+  sectionId: number
+  name: string
+  professor: string
+  reason: string | null
+  position: number | null
+}
 export interface Planner extends Page<Offer> {
+  waitlist: WaitEntry[]
   drafts: Offer[]
   confirmed: Enrollment[]
   progress: Progress

@@ -175,3 +175,28 @@ test('busca enquanto digita e mantém várias disciplinas na grade', async ({ pa
   await expect(previews).toHaveCount(1)
   await expect(previews).toContainText('Banco de Dados')
 })
+
+test('aluno vê a posição na fila e a matrícula automática quando a vaga é liberada', async ({ page, baseURL, playwright }) => {
+  const ana = await playwright.request.newContext({ baseURL })
+  try {
+    await ana.post('/api/sessao', { data: { username: 'ana' } })
+    const enrollment = await (await ana.post('/api/aluno/matriculas', { data: { sectionId: 1 } })).json()
+    await login(page, 'bruno')
+    const card = page.locator('.offer-cards li').filter({ hasText: 'Banco de Dados' })
+    await card.getByRole('button', { name: 'Entrar na lista de espera' }).click()
+    const waiting = page.getByRole('region', { name: 'Lista de espera' })
+    await expect(waiting).toContainText('1ª posição')
+    await waiting.getByRole('button', { name: 'Sair da fila' }).click()
+    await expect(waiting).toHaveCount(0)
+    await card.getByRole('button', { name: 'Entrar na lista de espera' }).click()
+    await expect(waiting).toContainText('1ª posição')
+    expect((await ana.delete('/api/aluno/matriculas/' + enrollment.id)).status()).toBe(204)
+    await page.reload()
+    await expect(card.getByText('Matrícula confirmada')).toBeVisible()
+    await expect(page.locator('#matriculas')).toContainText('Banco de Dados')
+    await expect(waiting).toHaveCount(0)
+    await expect(page.locator('.academic-summary')).toContainText('60h')
+  } finally {
+    await ana.dispose()
+  }
+})

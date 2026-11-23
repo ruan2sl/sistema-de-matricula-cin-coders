@@ -1,10 +1,14 @@
-import type { Enrollment } from '@matricula/contracts'
+import type { Enrollment, WaitEntry } from '@matricula/contracts'
 import { scheduleText } from '../../lib/week'
 export function Selection({
+  waitlist,
+  leave,
   confirmed,
   locked,
   cancel,
 }: {
+  waitlist: WaitEntry[]
+  leave: (id: number) => void
   confirmed: Enrollment[]
   locked: boolean
   cancel: (s: Enrollment) => void
@@ -25,6 +29,22 @@ export function Selection({
           </button>
         </article>
       ))}
+      {waitlist.length > 0 && (
+        <section aria-label="Lista de espera">
+          <h3>Lista de espera</h3>
+          {waitlist.map(entry => (
+            <article key={entry.id}>
+              <div><strong>{entry.name}</strong><p>Turma {entry.sectionId} · {entry.professor}</p></div>
+              {entry.reason ? <p>Inscrição encerrada: {entry.reason}</p> : (
+                <>
+                  <p>Em espera · {entry.position}ª posição</p>
+                  <button className="text-btn" disabled={locked} onClick={() => leave(entry.id)}>Sair da fila</button>
+                </>
+              )}
+            </article>
+          ))}
+        </section>
+      )}
     </section>
   )
 }
