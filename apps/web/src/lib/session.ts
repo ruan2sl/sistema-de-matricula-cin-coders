@@ -2,11 +2,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Session } from '@matricula/contracts'
 import { api, ApiError, setExpectedUser } from './api'
 import { navigate } from './location'
+import { notifyTabs } from './tabs'
 
 const signalKey = 'matricula:session-change'
-function notifyTabs() {
-  localStorage.setItem(signalKey, crypto.randomUUID())
-}
 
 export function useSession() {
   const [user, setUser] = useState<Session | null>()
@@ -75,7 +73,7 @@ export function useSession() {
     apply(person)
     setError('')
     setExpired(false)
-    notifyTabs()
+    notifyTabs(signalKey)
   }
   async function logout() {
     try {
@@ -84,7 +82,7 @@ export function useSession() {
       apply(null)
       setExpired(false)
       setError('')
-      notifyTabs()
+      notifyTabs(signalKey)
       navigate('/login', true)
     } catch (e) {
       setError((e as Error).message)

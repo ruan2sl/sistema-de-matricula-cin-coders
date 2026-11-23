@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { notifyTabs } from './tabs'
 
 let expectedUser: number | undefined
 export function setExpectedUser(id?: number) {
@@ -42,8 +43,7 @@ export async function api<T>(
     }
     throw new ApiError(response.status, body.error || 'Falha na comunicação com o servidor.')
   }
-  if (method !== 'GET' && path !== '/sessao')
-    localStorage.setItem('matricula:dados', crypto.randomUUID())
+  if (method !== 'GET' && path !== '/sessao') notifyTabs('matricula:dados')
   return response.status === 204 ? (undefined as T) : response.json()
 }
 type State<T> = { key: string; data?: T; error?: string }

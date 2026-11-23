@@ -31,6 +31,32 @@ async function login(page: Page, name: string) {
   await page.getByLabel('Nome de usuário').fill(name)
   await page.getByRole('button', { name: 'Entrar no portal' }).click()
 }
+test('confirma a matrícula mesmo quando o navegador bloqueia o armazenamento local', async ({ page }) => {
+  await page.addInitScript(() => {
+    Storage.prototype.setItem = () => { throw new DOMException('Armazenamento bloqueado', 'SecurityError') }
+  })
+  await login(page, 'ana')
+  const card = page.locator('.offer-cards li').filter({ hasText: 'Banco de Dados' })
+  await card.getByRole('button', { name: 'Matricular-se' }).click()
+  await expect(page.getByText('Matrícula confirmada em Banco de Dados.')).toBeVisible()
+  await page.reload()
+  await expect(card.getByText('Matrícula confirmada')).toBeVisible()
+})
+
+test('recupera as ofertas após falha de conexão preservando a busca', async ({ page }) => {
+  await login(page, 'ana')
+  const search = page.getByRole('searchbox')
+  await expect(search).toBeVisible()
+  await page.route('**/api/aluno/planejamento?*q=IF690*', route => route.abort(), { times: 1 })
+  await search.fill('IF690')
+  await expect(page.getByRole('alert')).toContainText('Falha na conexão')
+  await page.getByRole('button', { name: 'Tentar novamente' }).click()
+  const cards = page.locator('.offer-cards li')
+  await expect(cards).toHaveCount(1)
+  await expect(cards).toContainText('Banco de Dados')
+  await expect(search).toHaveValue('IF690')
+  await expect(page.getByRole('alert')).toHaveCount(0)
+})
 test('matricula diretamente e mostra conflito ao consultar a próxima turma', async ({ page }, info) => {
   await login(page, 'ana')
   const card = (name: string) =>
