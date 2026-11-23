@@ -65,7 +65,7 @@ export function progress(db: Db, student: User) {
   return summarize(studentRecords(db, student))
 }
 
-type Search = { q: string; page: number; eligible?: boolean }
+type Search = { q: string; page: number; eligible?: boolean; grouped?: boolean }
 
 function offerCatalog(db: Db, records: Records, search: Search, selected: number[]) {
   const { curriculum, approved, active, goals, semesterHours } = records
@@ -82,7 +82,7 @@ function offerCatalog(db: Db, records: Records, search: Search, selected: number
     return { ...section, group: classify(curriculum, section.subjectId), unavailable }
   }
   let page: Page<Offer>
-  if (search.eligible) {
+  if (search.eligible || search.grouped) {
     const matching = rows<Section>(
       db,
       `SELECT * FROM section_details
@@ -90,10 +90,14 @@ function offerCatalog(db: Db, records: Records, search: Search, selected: number
       search.q,
     )
       .map(classifyOffer)
-      .filter((offer) => offer.unavailable === null)
-    const result = pagination(matching.length, search.page)
+      .filter((offer) => !search.eligible || offer.unavailable === null)
+    const units = search.grouped
+      ? [...new Set(matching.map((s) => s.subjectId))]
+      : matching.map((s) => s.id)
+    const result = pagination(units.length, search.page)
     const offset = (result.page - 1) * result.pageSize
-    page = { ...result, items: matching.slice(offset, offset + result.pageSize) }
+    const visible = new Set(units.slice(offset, offset + result.pageSize))
+    page = { ...result, items: matching.filter((s) => visible.has(search.grouped ? s.subjectId : s.id)) }
   } else {
     const result = catalogPage<Section>(db, 'section_details', search)
     page = { ...result, items: result.items.map(classifyOffer) }

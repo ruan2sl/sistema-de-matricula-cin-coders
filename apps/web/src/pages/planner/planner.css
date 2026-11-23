@@ -458,3 +458,38 @@
   }
 }
 
+.offer-cards li {
+  border-top: 3px solid var(--section-color);
+}
+.course-code strong {
+  color: var(--section-color);
+  background: color-mix(in srgb, var(--course-color) 11%, white);
+}
+.teacher-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin: 4px 0;
+}
+.teacher-options button {
+  padding: 5px 7px;
+  font-size: 12px;
+  border: 1px solid #bdbbc2;
+  background: white;
+  color: #443e47;
+}
+.teacher-options [aria-pressed='true'] {
+  border-color: var(--course-color);
+  background: color-mix(in srgb, var(--course-color) 12%, white);
+  color: var(--course-color);
+  font-weight: 650;
+}
+.calendar-event.confirmed {
+  background: var(--section-color);
+  color: white;
+}
+.calendar-event.draft {
+  border-color: var(--course-color);
+  color: var(--section-color);
+  background: color-mix(in srgb, var(--course-color) 13%, white);
+}

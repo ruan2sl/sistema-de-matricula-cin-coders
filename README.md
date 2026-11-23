@@ -41,6 +41,8 @@ A carga inicial cria os dois cursos, seus currículos, usuários, professores, d
 
 ## Planejar uma semana
 
+O catálogo agrupa as turmas por disciplina antes de paginar. Nos cartões com múltiplas ofertas, selecione o professor para comparar horários e vagas. A cor identifica a disciplina no cartão e na grade, com variação de tom por turma.
+
 O catálogo fica à esquerda no desktop e a grade à direita, com dias em colunas e horários em linhas. Use **Matricular-se** para ocupar uma vaga diretamente. **Ver na grade** mostra uma prévia temporária de uma única oferta junto das matrículas ativas.
 
 Para ver um conflito, matricule Ana em Banco de Dados (T1) e consulte Design de Interação (T3) com **Ver na grade**. A sobreposição na segunda vai das 09:00 às 10:00. **Fechar prévia** limpa a consulta. O filtro de elegibilidade é aplicado antes da paginação.
@@ -115,4 +117,5 @@ Para os testes de navegador, instale o Chromium do Playwright uma vez com `npx p
 ## Com mais tempo
 
 Automatizaria o roteiro de navegador dos dois perfis no CI do GitLab. Para uso institucional, integraria a autenticação ao provedor da universidade. Ao passar a operar vários semestres, associaria turmas a períodos e registraria a conclusão das matrículas no histórico.
+
 

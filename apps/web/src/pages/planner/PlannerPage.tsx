@@ -20,6 +20,7 @@ export function PlannerPage({ query, destination }: { query: string; destination
   const params = new URLSearchParams(query),
     q = params.get('q') ?? '',
     eligible = params.get('elegiveis') === '1'
+  params.set('agrupar', 'disciplina')
   params.delete('simular')
   if (preview) params.set('simular', String(preview.id))
   const { data, error, pending, retry } = useData<Planner>('/aluno/planejamento?' + params, true)

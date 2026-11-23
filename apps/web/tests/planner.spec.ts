@@ -94,3 +94,27 @@ test('a secretaria edita horários e o aluno consulta os encontros cadastrados',
     .click()
   await expect(page.getByRole('button', { name: /Segunda 07:30–10:00.*Banco de Dados/ })).toBeVisible()
 })
+
+test('turmas da mesma disciplina compartilham cartão e a matrícula usa o professor escolhido', async ({
+  page,
+}) => {
+  await login(page, 'ana')
+  const cards = page.locator('.offer-cards li').filter({ hasText: 'Algoritmos e Estruturas de Dados' })
+  await expect(cards).toHaveCount(1)
+  await cards.getByRole('button', { name: /T9 · Helena/ }).click()
+  await expect(cards).toContainText('Seg 14:00–16:00')
+  await expect(page.locator('.calendar-event.draft').first()).toContainText('T9')
+  await cards.getByRole('button', { name: 'Matricular-se' }).click()
+  await expect(page.locator('.calendar-event.confirmed').first()).toContainText('T9')
+  await page
+    .locator('.offer-cards li')
+    .filter({ hasText: 'Banco de Dados' })
+    .getByRole('button', { name: 'Ver na grade' })
+    .click()
+  const color = (selector: string) =>
+    page
+      .locator(selector)
+      .first()
+      .evaluate((el) => getComputedStyle(el).getPropertyValue('--course-color'))
+  expect(await color('.calendar-event.draft')).not.toBe(await color('.calendar-event.confirmed'))
+})

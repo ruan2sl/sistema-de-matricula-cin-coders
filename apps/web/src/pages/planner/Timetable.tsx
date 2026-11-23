@@ -1,3 +1,4 @@
+import { courseColor } from '../../lib/courseColor'
 import type { Entry } from '../../lib/week'
 import { days, clock, layoutDay } from '../../lib/week'
 
@@ -55,6 +56,7 @@ export function Timetable({
                       onClick={() => onInspect(b)}
                       className={'calendar-event ' + b.kind}
                       style={{
+                        ...courseColor(b.section.subjectId, b.section.id),
                         top: ((b.start - start) / (end - start)) * 100 + '%',
                         height: ((b.end - b.start) / (end - start)) * 100 + '%',
                         left: (b.lane / lanes) * 100 + '%',

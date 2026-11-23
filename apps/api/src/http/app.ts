@@ -38,7 +38,14 @@ export function createApp(db: Db) {
     if (raw !== undefined && typeof raw !== 'string')
       throw new HttpError(400, 'Seleção de turmas inválida.')
     const selected = raw ? [...new Set(raw.split(',').map(parseId))] : []
-    res.json(planner(db, res.locals.user, readSearch(req.query), selected))
+    res.json(
+      planner(
+        db,
+        res.locals.user,
+        { ...readSearch(req.query), grouped: req.query.agrupar === 'disciplina' },
+        selected,
+      ),
+    )
   })
   student.get('/progresso', (_req, res) => res.json(progress(db, res.locals.user)))
   student.get('/matriculas', (_req, res) => res.json(enrollments(db, res.locals.user)))
