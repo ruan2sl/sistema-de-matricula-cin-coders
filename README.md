@@ -56,9 +56,9 @@ A carga inicial cria os dois cursos, seus currículos, usuários, professores, d
 
 O catálogo agrupa as turmas por disciplina antes de paginar. Nos cartões com múltiplas ofertas, selecione o professor para comparar horários e vagas. A cor identifica a disciplina no cartão e na grade, com variação de tom por turma.
 
-O catálogo fica à esquerda no desktop e a grade à direita, com dias em colunas e horários em linhas. Use **Matricular-se** para ocupar uma vaga diretamente. **Ver na grade** mostra uma prévia temporária de uma única oferta junto das matrículas ativas.
+O catálogo fica à esquerda no desktop e a grade à direita, com dias em colunas e horários em linhas. Use **Matricular-se** para ocupar uma vaga diretamente. **Ver na grade** mostra várias disciplinas junto das matrículas ativas. Trocar de professor substitui a turma daquela disciplina na prévia. A busca filtra enquanto você digita e volta a listar as ofertas ao limpar o campo.
 
-Para ver um conflito, matricule Ana em Banco de Dados (T1) e consulte Design de Interação (T3) com **Ver na grade**. A sobreposição na segunda vai das 09:00 às 10:00. **Fechar prévia** limpa a consulta. O filtro de elegibilidade é aplicado antes da paginação.
+Para ver um conflito, matricule Ana em Banco de Dados (T1) e consulte Design de Interação (T3) com **Ver na grade**. A sobreposição na segunda vai das 09:00 às 10:00. **Fechar prévia** remove apenas a turma escolhida. O filtro de elegibilidade é aplicado antes da paginação.
 
 Os encontros usam dia da semana (segunda = 1, domingo = 7) e minutos desde meia-noite. A grade ordena os encontros de cada dia pelo início e reutiliza a primeira linha que estiver livre. Dois encontros consecutivos podem usar a mesma linha. A interface sinaliza sobreposições entre turmas selecionadas ou confirmadas, e o aluno decide quais confirmar. Turmas com horário a definir aparecem na lista. A secretaria pode cadastrar vários encontros ao abrir uma turma ou alterá-los depois em **Editar horários**.
 

@@ -61,14 +61,24 @@ export function searchUrl(q: string, page = 1) {
   if (page > 1) params.set('page', String(page))
   return location.pathname + (params.size ? '?' + params : '')
 }
-export function Search({ q, placeholder }: { q: string; placeholder: string }) {
+export function Search({ q, placeholder, live = false }: { q: string; placeholder: string; live?: boolean }) {
   const [term, setTerm] = useState(q)
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   useEffect(() => {
-    setTerm(q)
+    setTerm(current => current.trim() === q ? current : q)
+    return () => clearTimeout(timer.current)
   }, [q])
+  function change(value: string) {
+    setTerm(value)
+    if (!live) return
+    clearTimeout(timer.current)
+    if (!value.trim()) navigate(searchUrl(''), true)
+    else timer.current = setTimeout(() => navigate(searchUrl(value), true), 200)
+  }
   function submit(event: FormEvent) {
     event.preventDefault()
-    navigate(searchUrl(term))
+    clearTimeout(timer.current)
+    navigate(searchUrl(term), live)
   }
   return (
     <form className="search" onSubmit={submit} role="search">
@@ -79,9 +89,9 @@ export function Search({ q, placeholder }: { q: string; placeholder: string }) {
         placeholder={placeholder}
         maxLength={120}
         value={term}
-        onChange={(event) => setTerm(event.target.value)}
+        onChange={(event) => change(event.target.value)}
       />
-      <button type="submit">Buscar</button>
+      {!live && <button type="submit">Buscar</button>}
     </form>
   )
 }

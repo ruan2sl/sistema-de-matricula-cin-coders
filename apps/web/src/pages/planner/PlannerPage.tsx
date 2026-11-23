@@ -12,7 +12,7 @@ import { CourseProgress } from './Progress'
 import './planner.css'
 
 export function PlannerPage({ query, destination }: { query: string; destination: string }) {
-  const [preview, setPreview] = useState<Offer | null>(null),
+  const [previews, setPreviews] = useState<Offer[]>([]),
     [cancel, setCancel] = useState<Enrollment | null>(null),
     [inspect, setInspect] = useState<Entry | null>(null)
   const [busy, setBusy] = useState(false),
@@ -22,7 +22,7 @@ export function PlannerPage({ query, destination }: { query: string; destination
     eligible = params.get('elegiveis') === '1'
   params.set('agrupar', 'disciplina')
   params.delete('simular')
-  if (preview) params.set('simular', String(preview.id))
+  if (previews.length) params.set('simular', previews.map(s => s.id).join(','))
   const { data, error, pending, retry } = useData<Planner>('/aluno/planejamento?' + params, true)
   useEffect(() => {
     const sync = (e: StorageEvent) => {
@@ -61,12 +61,19 @@ export function PlannerPage({ query, destination }: { query: string; destination
   }, [destination, ready])
   if (!data) return <Status error={error} retry={retry} />
   const confirmed = new Set(data.confirmed.map((s) => s.id))
-  const candidate =
-    preview && !confirmed.has(preview.id)
-      ? (data.drafts.find((s) => s.id === preview.id) ?? preview)
-      : null
+  const candidates = previews.filter(s => !confirmed.has(s.id)).map(s => {
+    const updated = data.drafts.find(draft => draft.id === s.id)
+    return updated ? { ...s, ...updated } : s
+  })
+  const inspectedOffer = candidates.find(s => s.id === inspect?.section.id)
   const entries: Entry[] = data.confirmed.map((section) => ({ section, kind: 'confirmed' }))
-  if (candidate) entries.push({ section: candidate, kind: 'draft' })
+  for (const section of candidates) entries.push({ section, kind: 'draft' })
+  function togglePreview(section: Offer) {
+    setPreviews(current => {
+      const others = current.filter(s => s.subjectId !== section.subjectId)
+      return current.some(s => s.id === section.id) ? others : [...others, section]
+    })
+  }
   const clashes = conflicts(entries)
   function filter(v: boolean) {
     const p = new URLSearchParams(query)
@@ -81,7 +88,7 @@ export function PlannerPage({ query, destination }: { query: string; destination
     try {
       if (removing) await api('/aluno/matriculas/' + section.enrollmentId, 'DELETE')
       else await api('/aluno/matriculas', 'POST', { sectionId: section.id })
-      if (preview?.id === section.id) setPreview(null)
+      setPreviews(current => current.filter(s => s.subjectId !== section.subjectId))
       setNotice({
         text: (removing ? 'Matrícula cancelada em ' : 'Matrícula confirmada em ') + section.name + '.',
         error: false,
@@ -125,26 +132,26 @@ export function PlannerPage({ query, destination }: { query: string; destination
           eligible={eligible}
           filter={filter}
           confirmed={confirmed}
-          preview={candidate?.id ?? null}
+          preview={new Set(candidates.map(s => s.id))}
           locked={locked}
           enroll={save}
           view={(s) => {
-            setPreview(candidate?.id === s.id ? null : s)
+            togglePreview(s)
             if (matchMedia('(max-width:760px)').matches)
               document.getElementById('grade')?.scrollIntoView()
           }}
         />
         <div id="grade">
           <Timetable entries={entries} onInspect={setInspect} />
-          {candidate && (
-            <div className="preview-note">
+          {candidates.map(candidate => (
+            <div className="preview-note" key={candidate.id}>
               <strong>Prévia · {candidate.name}</strong>
               <p>{scheduleText(candidate.meetings)}</p>
-              <button className="text-btn" onClick={() => setPreview(null)}>
+              <button className="text-btn" onClick={() => togglePreview(candidate)}>
                 Fechar prévia
               </button>
             </div>
-          )}
+          ))}
           {clashes.map((c) => (
             <p className="clashes" key={[c.first.id, c.second.id, c.slot.day, c.slot.start].join('-')}>
               Conflito de horário · {days[c.slot.day - 1]} {clock(c.slot.start)}–{clock(c.slot.end)} ·{' '}
@@ -161,11 +168,11 @@ export function PlannerPage({ query, destination }: { query: string; destination
       {inspect && (
         <Modal title={inspect.section.name} close={() => setInspect(null)}>
           <p>{scheduleText(inspect.section.meetings)}</p>
-          {inspect.kind === 'draft' && candidate && (
+          {inspect.kind === 'draft' && inspectedOffer && (
             <button
               className="primary"
-              disabled={locked || !!candidate.unavailable}
-              onClick={() => save(candidate)}
+              disabled={locked || !!inspectedOffer.unavailable}
+              onClick={() => save(inspectedOffer)}
             >
               Matricular-se
             </button>

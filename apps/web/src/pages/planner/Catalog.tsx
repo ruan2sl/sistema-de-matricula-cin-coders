@@ -9,7 +9,7 @@ interface Props {
   eligible: boolean
   filter: (v: boolean) => void
   confirmed: Set<number>
-  preview: number | null
+  preview: Set<number>
   view: (s: Offer) => void
   enroll: (s: Offer) => void
   locked: boolean
@@ -29,7 +29,7 @@ export function Catalog({ data, q, eligible, filter, confirmed, preview, view, e
           {data.total} {data.total === 1 ? 'disciplina' : 'disciplinas'}
         </small>
       </div>
-      <Search q={q} placeholder="Buscar disciplina ou código" />
+      <Search live q={q} placeholder="Buscar disciplina ou código" />
       <label className="check-label">
         <input type="checkbox" checked={eligible} onChange={(e) => filter(e.target.checked)} /> Somente
         turmas em que posso me matricular
@@ -55,7 +55,7 @@ function CourseCard({
   const [chosen, setChosen] = useState<number | null>(null)
   const s =
     options.find((o) => o.id === chosen) ??
-    options.find((o) => o.id === preview) ??
+    options.find((o) => preview.has(o.id)) ??
     options.find((o) => confirmed.has(o.id)) ??
     options[0]
   return (
@@ -74,7 +74,7 @@ function CourseCard({
               aria-pressed={o.id === s.id}
               onClick={() => {
                 setChosen(o.id)
-                if (preview !== o.id) view(o)
+                if (!preview.has(o.id)) view(o)
               }}
             >
               T{o.id} · {o.professor}
@@ -93,8 +93,8 @@ function CourseCard({
       ) : (
         <>
           <div className="course-buttons">
-            <button className="secondary" aria-pressed={preview === s.id} onClick={() => view(s)}>
-              {preview === s.id ? 'Fechar prévia' : 'Ver na grade'}
+            <button className="secondary" aria-pressed={preview.has(s.id)} onClick={() => view(s)}>
+              {preview.has(s.id) ? 'Fechar prévia' : 'Ver na grade'}
             </button>
             <button className="primary" disabled={locked || !!s.unavailable} onClick={() => enroll(s)}>
               Matricular-se
