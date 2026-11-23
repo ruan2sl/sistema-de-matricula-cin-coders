@@ -200,3 +200,13 @@ test('aluno vê a posição na fila e a matrícula automática quando a vaga é 
     await ana.dispose()
   }
 })
+
+test('nova busca com várias páginas começa na primeira página', async ({ page }) => {
+  await login(page, 'ana')
+  await page.getByRole('button', { name: 'Próxima' }).click()
+  await expect(page.locator('.pager')).toContainText('Página 2 de')
+  await page.getByRole('searchbox').fill('a')
+  await expect(page).toHaveURL(/q=a$/)
+  await expect(page.locator('.pager')).toContainText('Página 1 de 2')
+  await expect(page.locator('.offer-cards li')).toHaveCount(6)
+})

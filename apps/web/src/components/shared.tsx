@@ -107,12 +107,12 @@ export function Empty({ q, message }: { q?: string; message: string }) {
     </div>
   )
 }
-export function Pager({ page, q }: { page: Omit<Page<unknown>, 'items'>; q: string }) {
+export function Pager({ page, q, current = true }: { page: Omit<Page<unknown>, 'items'>; q: string; current?: boolean }) {
   const last = Math.max(1, Math.ceil(page.total / page.pageSize))
   useEffect(() => {
     const requested = Number(new URLSearchParams(location.search).get('page') || 1)
-    if (requested !== page.page) navigate(searchUrl(q, page.page), true)
-  }, [page.page, q])
+    if (current && requested !== page.page) navigate(searchUrl(q, page.page), true)
+  }, [current, page.page, q])
   return (
     <div className="pager">
       <span>

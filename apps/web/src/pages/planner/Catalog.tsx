@@ -42,7 +42,7 @@ export function Catalog({ data, q, eligible, filter, waiting, join, confirmed, p
           <CourseCard key={id} options={options} {...{ waiting, join, confirmed, preview, view, enroll, locked }} />
         ))}
       </ul>
-      <Pager page={data} q={q} />
+      <Pager page={data} q={q} current={!locked} />
     </section>
   )
 }
