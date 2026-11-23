@@ -118,3 +118,13 @@ test('turmas da mesma disciplina compartilham cartão e a matrícula usa o profe
       .evaluate((el) => getComputedStyle(el).getPropertyValue('--course-color'))
   expect(await color('.calendar-event.draft')).not.toBe(await color('.calendar-event.confirmed'))
 })
+
+test('Progresso exibe as disciplinas e os resultados do histórico de Ana', async ({page},info)=>{
+  await login(page,'ana')
+  await page.getByRole('link',{name:'Progresso',exact:true}).click()
+  const history=page.getByRole('region',{name:'Disciplinas cursadas'})
+  await expect(history.getByRole('listitem')).toHaveCount(4)
+  await expect(history.getByText('Aprovada',{exact:true})).toHaveCount(3)
+  await expect(history.getByRole('listitem').filter({hasText:'Algoritmos e Estruturas de Dados'})).toContainText('Reprovada')
+  await history.screenshot({path:info.outputPath('historico-ana.png')})
+})

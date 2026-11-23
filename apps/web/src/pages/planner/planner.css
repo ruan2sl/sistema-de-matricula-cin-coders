@@ -493,3 +493,11 @@
   color: var(--section-color);
   background: color-mix(in srgb, var(--course-color) 13%, white);
 }
+.academic-history {margin:20px 0}
+.academic-history h2 {font-size:19px}
+.academic-history ul {list-style:none;padding:0}
+.academic-history li {display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 0;border-bottom:1px solid var(--line)}
+.academic-history small {display:block;color:var(--soft);margin-top:3px}
+.academic-history li span {padding:4px 8px;border-radius:4px;font-size:13px;font-weight:600}
+.academic-history .aprovada {color:#245639;background:#e8f4eb}
+.academic-history .reprovada {color:#902438;background:#ffedf0}

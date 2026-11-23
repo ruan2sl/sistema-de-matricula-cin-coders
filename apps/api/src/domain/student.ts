@@ -1,5 +1,6 @@
 import type {
   Enrollment,
+  HistoryEntry,
   Goals,
   Group,
   Offer,
@@ -35,12 +36,13 @@ function studentRecords(db: Db, student: User) {
     courseId,
   )!
   const curriculum = courseCurriculum(db, courseId)
-  const approved = rows<Credit>(
+  const history = rows<HistoryEntry>(
     db,
-    `SELECT subjectId,hours FROM history
-    WHERE studentId=? AND result='aprovada' ORDER BY id`,
+    `SELECT h.id,h.subjectId,s.code,s.name,h.hours,h.result FROM history h
+     JOIN subjects s ON s.id=h.subjectId WHERE h.studentId=? ORDER BY h.id`,
     student.id,
   )
+  const approved = history.filter(entry => entry.result === 'aprovada')
   const active = rows<Credit>(
     db,
     `SELECT s.subjectId,e.hours FROM enrollments e JOIN sections s ON s.id=e.sectionId
@@ -48,13 +50,14 @@ function studentRecords(db: Db, student: User) {
     student.id,
   )
   const semesterHours = active.reduce((sum, row) => sum + row.hours, 0)
-  return { goals, curriculum, approved, active, semesterHours }
+  return { goals, curriculum, history, approved, active, semesterHours }
 }
 
 type Records = ReturnType<typeof studentRecords>
 
-function summarize({ goals, curriculum, approved, active, semesterHours }: Records): Progress {
+function summarize({ goals, curriculum, history, approved, active, semesterHours }: Records): Progress {
   return {
+    history,
     groups: calculateProgress(goals, curriculum, approved, active),
     semesterHours,
     semesterLimit: goals.semesterLimit,

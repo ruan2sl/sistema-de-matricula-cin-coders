@@ -21,11 +21,24 @@ npm run dev
 
 Abra [o portal local](http://localhost:3000). O servidor inicia a API e o Vite na mesma porta. Para usar a versão de produção local, encerre o servidor de desenvolvimento e execute `npm run build` seguido de `npm start`. O build também verifica os tipos de toda a aplicação.
 
+## Dados iniciais
+
+O comando `npm run seed` carrega os cursos, as estruturas curriculares, os alunos e seus históricos a partir de [demo.sql](apps/api/src/db/demo.sql). Esses dados são definidos diretamente no banco. As contas disponíveis para entrar no portal são:
+
 | Usuário      | Perfil     | Curso                  |
 | ------------ | ---------- | ---------------------- |
 | `ana`        | Aluna      | Ciência da Computação  |
 | `bruno`      | Aluno      | Sistemas de Informação |
 | `secretaria` | Secretaria | —                      |
+
+Banco de Dados (`IF690`) é obrigatória para Ana e eletiva de perfil para Bruno. Redes de Computadores (`IF677`) é eletiva de perfil para Ana e obrigatória para Bruno.
+
+| Aluno | Disciplinas aprovadas | Disciplina reprovada | CH integralizada ao abrir **Progresso** |
+| --- | --- | --- | --- |
+| Ana Lima | Introdução à Computação, Processamento de Imagens e Computação Gráfica | Algoritmos e Estruturas de Dados | 60h obrigatórias, 90h de perfil e 30h livres |
+| Bruno Costa | Introdução à Computação e Algoritmos e Estruturas de Dados | Redes de Computadores | 60h obrigatórias, 60h de perfil e 0h livres |
+
+Ana já cumpriu 120h em disciplinas de perfil. Como seu curso exige 90h nesse grupo, as 30h excedentes contam como livres. Bruno pode se matricular novamente em Redes de Computadores. Ao fazer isso, as 60h da turma aparecem como **em curso** e o total integralizado permanece igual.
 
 O teste permite login somente com nome de usuário. A sessão dura oito horas. O servidor grava o hash de um identificador aleatório e o navegador recebe o identificador em um cookie HttpOnly e SameSite=Strict. O logout revoga a sessão. Para um ambiente com HTTPS, configure `COOKIE_SECURE=true`.
 

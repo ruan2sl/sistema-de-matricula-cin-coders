@@ -8,6 +8,15 @@ const progressTitles = {
 export function CourseProgress({ data }: { data: Progress }) {
   return (
     <>
+      <section className="academic-history" aria-labelledby="history-title">
+        <h2 id="history-title">Disciplinas cursadas</h2>
+        {!Array.isArray(data.history) ? <p>O histórico está indisponível nesta versão do servidor.</p> :
+          data.history.length === 0 ? <p>Nenhuma disciplina registrada no histórico.</p> :
+          <ul>{data.history.map(entry => <li key={entry.id}>
+            <div><strong>{entry.name}</strong><small>{entry.code} · {entry.hours}h</small></div>
+            <span className={entry.result}>{entry.result === 'aprovada' ? 'Aprovada' : 'Reprovada'}</span>
+          </li>)}</ul>}
+      </section>
       <p className="intro">
         A carga integralizada considera as disciplinas aprovadas. Neste semestre, você tem{' '}
         <strong>{data.semesterHours}h em curso</strong> de um limite de {data.semesterLimit}h.

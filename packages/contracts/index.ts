@@ -67,7 +67,16 @@ export interface Planner extends Page<Offer> {
   progress: Progress
 }
 export interface Progress {
+  history: HistoryEntry[]
   groups: ProgressRow[]
   semesterHours: number
   semesterLimit: number
+}
+export interface HistoryEntry {
+  id: number
+  subjectId: number
+  code: string
+  name: string
+  hours: number
+  result: 'aprovada' | 'reprovada'
 }
