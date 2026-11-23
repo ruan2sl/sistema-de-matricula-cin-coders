@@ -1,124 +1,79 @@
-import type { CSSProperties } from 'react'
-import { clock, days, layoutDay } from '../../lib/week'
-import type { Entry, Kind } from '../../lib/week'
+import type { Entry } from '../../lib/week'
+import { days, clock, layoutDay } from '../../lib/week'
 
-export const statusName: Record<Kind, string> = {
-  offer: 'Oferta',
-  draft: 'Simulada',
-  confirmed: 'Matriculada',
-}
 export function Timetable({
   entries,
   onInspect,
-  showOffers,
-  setShowOffers,
-  day: mobileDay,
-  setDay: setMobileDay,
 }: {
   entries: Entry[]
   onInspect: (entry: Entry) => void
-  day: number
-  setDay: (day: number) => void
-  showOffers: boolean
-  setShowOffers: (value: boolean) => void
 }) {
-  const visible = entries.filter((e) => showOffers || e.kind !== 'offer')
-  const slots = visible.flatMap((e) => e.section.meetings)
-  const start = Math.floor(Math.min(480, ...slots.map((s) => s.start)) / 120) * 120
-  const end = Math.ceil(Math.max(1080, ...slots.map((s) => s.end)) / 120) * 120
-  const ticks = Array.from({ length: (end - start) / 120 + 1 }, (_, i) => start + i * 120)
-  const shownDays = days
-    .map((name, i) => ({ day: i + 1, name }))
-    .filter(({ day }) => day <= 5 || slots.some((slot) => slot.day === day))
-  const chosenDay = shownDays.some(({ day }) => day === mobileDay) ? mobileDay : 1
+  const meetings = entries.flatMap((e) => e.section.meetings)
+  const start = Math.floor(Math.min(480, ...meetings.map((m) => m.start)) / 60) * 60
+  const end = Math.ceil(Math.max(1080, ...meetings.map((m) => m.end)) / 60) * 60
+  const hours = Array.from({ length: (end - start) / 60 }, (_, i) => start + i * 60)
+  const columns = days.filter((_, i) => i < 5 || meetings.some((m) => m.day === i + 1))
   return (
-    <section className="timetable" aria-labelledby="week-title">
-      <header className="week-head">
-        <h2 id="week-title">Grade semanal</h2>
-        <label className="check-label">
-          <input
-            type="checkbox"
-            checked={showOffers}
-            onChange={(e) => setShowOffers(e.target.checked)}
-          />{' '}
-          Mostrar ofertas da página
-        </label>
-      </header>
-      <div className="mobile-days" aria-label="Dia da semana">
-        {shownDays.map(({ day, name }) => (
-          <button
-            key={day}
-            type="button"
-            aria-pressed={day === chosenDay}
-            onClick={() => setMobileDay(day)}
-          >
-            {name.slice(0, 3)}
-          </button>
-        ))}
-      </div>
-      <div className="week-grid" style={{ '--columns': ticks.length - 1 } as CSSProperties}>
-        <div className="week-axis">
-          <span>Dia / hora</span>
-          <div>
-            {ticks.map((t) => (
-              <small key={t} style={{ left: (100 * (t - start)) / (end - start) + '%' }}>
-                {clock(t)}
-              </small>
+    <section className="schedule-panel" aria-labelledby="week-title">
+      <h2 id="week-title">Grade semanal</h2>
+      <div className="calendar-scroll">
+        <div
+          className="vertical-grid"
+          style={{ gridTemplateColumns: '40px repeat(' + columns.length + ', minmax(50px,1fr))' }}
+        >
+          <span className="weekday">Hora</span>
+          {columns.map((d) => (
+            <strong className="weekday" key={d}>
+              {d.slice(0, 3)}
+            </strong>
+          ))}
+          <div className="hour-axis">
+            {hours.map((h) => (
+              <span key={h}>{clock(h)}</span>
             ))}
           </div>
-        </div>
-        {shownDays.map(({ day, name }) => {
-          const { blocks, lanes } = layoutDay(visible, day)
-          return (
-            <div
-              className={'week-row' + (chosenDay === day ? ' mobile-current' : '')}
-              key={day}
-              aria-label={name}
-            >
-              <strong className="day-label">{name}</strong>
-              <div className="day-track" style={{ '--lanes': lanes } as CSSProperties}>
-                {!blocks.length && <span className="no-meeting">Sem encontros</span>}
+          {columns.map((name) => {
+            const { blocks, lanes } = layoutDay(entries, days.indexOf(name) + 1)
+            return (
+              <div key={name} aria-label={name} className="vertical-day">
                 {blocks.map((b) => {
-                  const s = b.section
-                  const label = `${s.name} · ${s.code} · Turma ${s.id} · ${name} ${clock(b.start)}–${clock(b.end)} · ${statusName[b.kind]}`
+                  const label =
+                    name +
+                    ' ' +
+                    clock(b.start) +
+                    '–' +
+                    clock(b.end) +
+                    ' · ' +
+                    b.section.name +
+                    ' · ' +
+                    (b.kind === 'draft' ? 'Prévia' : 'Matrícula confirmada')
                   return (
                     <button
-                      key={s.id + '-' + b.start}
-                      type="button"
-                      aria-label={label}
+                      key={b.section.id + '-' + b.start}
                       title={label}
-                      className={`time-block tone-${s.subjectId % 6} ${b.kind}`}
-                      style={{
-                        left: (100 * (b.start - start)) / (end - start) + '%',
-                        width: (100 * (b.end - b.start)) / (end - start) + '%',
-                        top: 5 + b.lane * 40,
-                      }}
+                      aria-label={label}
                       onClick={() => onInspect(b)}
+                      className={'calendar-event ' + b.kind}
+                      style={{
+                        top: ((b.start - start) / (end - start)) * 100 + '%',
+                        height: ((b.end - b.start) / (end - start)) * 100 + '%',
+                        left: (b.lane / lanes) * 100 + '%',
+                        width: 100 / lanes + '%',
+                      }}
                     >
-                      <strong>
-                        {s.code} <span>· T{s.id}</span>
-                      </strong>
-                      <small>
-                        {clock(b.start)}–{clock(b.end)}
-                      </small>
-                      <span className="mobile-name">
-                        {s.name} · {statusName[b.kind]}
-                      </span>
+                      <strong>{b.section.code}</strong>
+                      <small>T{b.section.id}</small>
                     </button>
                   )
                 })}
               </div>
-            </div>
-          )
-        })}
+            )
+          })}
+        </div>
       </div>
-      <div className="week-legend">
-        {(['offer', 'draft', 'confirmed'] as const).map((kind) => (
-          <span key={kind}>
-            <i className={kind} />
-            {statusName[kind]}
-          </span>
-        ))}
+      <div className="calendar-key">
+        <span>● Matriculada</span>
+        <span>┄ Prévia</span>
       </div>
     </section>
   )

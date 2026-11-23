@@ -41,9 +41,9 @@ A carga inicial cria os dois cursos, seus currículos, usuários, professores, d
 
 ## Planejar uma semana
 
-Na área do aluno, a grade, o catálogo, a seleção, as matrículas e o progresso ficam na mesma página. Clique em um bloco ou em **Simular** no catálogo. A seleção muda a grade na hora e fica salva nesta aba para o mesmo aluno, inclusive após buscar outra página ou recarregar. **Confirmar matrícula** envia o pedido à API, que verifica novamente as vagas e a elegibilidade.
+O catálogo fica à esquerda no desktop e a grade à direita, com dias em colunas e horários em linhas. Use **Matricular-se** para ocupar uma vaga diretamente. **Ver na grade** mostra uma prévia temporária de uma única oferta junto das matrículas ativas.
 
-Para ver um conflito, simule Banco de Dados (T1) e Design de Interação (T3). Os encontros se sobrepõem na segunda, das 09:00 às 10:00. **Mostrar ofertas da página** alterna a camada do catálogo. O filtro **Somente turmas em que posso me matricular** é aplicado antes da paginação. Na versão móvel, os botões dos dias abrem a agenda correspondente.
+Para ver um conflito, matricule Ana em Banco de Dados (T1) e consulte Design de Interação (T3) com **Ver na grade**. A sobreposição na segunda vai das 09:00 às 10:00. **Fechar prévia** limpa a consulta. O filtro de elegibilidade é aplicado antes da paginação.
 
 Os encontros usam dia da semana (segunda = 1, domingo = 7) e minutos desde meia-noite. A grade ordena os encontros de cada dia pelo início e reutiliza a primeira linha que estiver livre. Dois encontros consecutivos podem usar a mesma linha. A interface sinaliza sobreposições entre turmas selecionadas ou confirmadas, e o aluno decide quais confirmar. Turmas com horário a definir aparecem na lista. A secretaria pode cadastrar vários encontros ao abrir uma turma ou alterá-los depois em **Editar horários**.
 
@@ -115,3 +115,4 @@ Para os testes de navegador, instale o Chromium do Playwright uma vez com `npx p
 ## Com mais tempo
 
 Automatizaria o roteiro de navegador dos dois perfis no CI do GitLab. Para uso institucional, integraria a autenticação ao provedor da universidade. Ao passar a operar vários semestres, associaria turmas a períodos e registraria a conclusão das matrículas no histórico.
+

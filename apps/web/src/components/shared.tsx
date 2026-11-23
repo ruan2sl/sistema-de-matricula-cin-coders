@@ -11,14 +11,8 @@ export const groupName: Record<Group, string> = {
 export function Brand() {
   return (
     <div className="brand">
-      <span className="brandmark" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-      </span>
-      <span>
-        Graduação<span className="brand-dot">.</span>
-      </span>
+      <b className="cin-word">CIn</b>
+      <span className="brand-label">Graduação</span>
     </div>
   )
 }

@@ -56,7 +56,6 @@ function App() {
       </a>
       <header className="mast">
         <div className="mast-inner">
-          <Brand />
           <div className="identity">
             <div>
               <strong>{user.name}</strong>
@@ -68,7 +67,8 @@ function App() {
           </div>
         </div>
       </header>
-      <nav aria-label="Área acadêmica">
+      <nav className="rail" aria-label="Área acadêmica">
+        <Brand />
         <div>
           {pages.map(([url, label]) => (
             <Link key={url} to={url + (user.role === 'aluno' ? query : '')} current={url === path}>
@@ -80,7 +80,7 @@ function App() {
       <main id="conteudo" className="workspace" tabIndex={-1}>
         <Notice text={error} error />
         {user.role === 'aluno' ? (
-          <PlannerPage key={user.id} owner={user.id} query={query} destination={path} />
+          <PlannerPage key={user.id} query={query} destination={path} />
         ) : (
           officeViews[path]
         )}
